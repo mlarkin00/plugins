@@ -15,7 +15,7 @@
       "name": "memory-bank",
       "source": "./memory-bank",
       "description": "GCP-backed long-term memory for Claude Code. Fetches global and project-scoped facts from Vertex AI Reasoning Engine Memory Bank at session start; consolidates new facts at session end.",
-      "version": "0.1.26"
+      "version": "0.1.27"
     },
     {
       "name": "llm-wiki",

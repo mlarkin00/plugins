@@ -1,6 +1,6 @@
 {
   "name": "memory-bank",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "GCP-backed long-term memory. Fetches global and project-scoped facts via Vertex AI Reasoning Engine Memory Bank; consolidates new facts server-side.",
   "author": {
     "name": "Matt Larkin",
