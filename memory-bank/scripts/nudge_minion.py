@@ -18,8 +18,8 @@ import subprocess
 import urllib.request
 
 # The deployed memory-minion engine's :query endpoint. Override with MINION_QUERY_URL.
-DEFAULT_URL = ("https://us-west1-aiplatform.googleapis.com/v1/projects/845186993936"
-               "/locations/us-west1/reasoningEngines/3903116745023422464:query")
+DEFAULT_URL = ("https://us-west1-aiplatform.googleapis.com/v1/projects/756846227114"
+               "/locations/us-west1/reasoningEngines/4732975345110614016:query")
 
 
 def _url():

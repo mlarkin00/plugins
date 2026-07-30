@@ -27,7 +27,7 @@ Port of the `gcp-memory-bank` Gemini CLI plugin (`~/agent-skills/plugins/memory-
   ```bash
   gcloud auth application-default login
   ```
-- The target GCP project (`845186993936`) must have the Vertex AI API enabled.
+- The target GCP project (`756846227114` — `agentic-ops-dev`) must have the Vertex AI API enabled.
 
 ---
 

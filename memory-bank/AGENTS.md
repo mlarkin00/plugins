@@ -9,7 +9,7 @@ Claude Code plugin in the `mlarkin00/plugins` monorepo (remote: `https://github.
 Tech stack: Python 3 (stdlib only) · GCP Vertex AI Reasoning Engine Memory Bank API · ADC via `gcloud` · bash hook scripts.
 Plugin root: `~/claude/memory-bank/`
 
-GCP config: project `845186993936`, location `us-west1`, reasoning engine `2527865193187246080` (hardcoded in `.claude-plugin/plugin.json`; env-var fallback: `GCP_PROJECT`, `GCP_LOCATION`, `GCP_REASONING_ENGINE`).
+GCP config: project `756846227114` (`agentic-ops-dev`), location `us-west1`, reasoning engine `3095916880561438720` (hardcoded in `.claude-plugin/plugin.json`; env-var fallback: `GCP_PROJECT`, `GCP_LOCATION`, `GCP_REASONING_ENGINE` — note the manifest value **shadows** the env var, so a populated field must be edited, not overridden).
 
 ## Operational Commands
 
