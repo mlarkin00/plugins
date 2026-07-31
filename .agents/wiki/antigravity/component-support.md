@@ -38,6 +38,11 @@ list` recorded the plugin's components as `["skills", "hooks"]`, and a live `agy
 session with tools disabled confirmed both new skills were loaded and named. A
 skill reaches the session; an agent does not.
 
+If you nonetheless author a Claude-only agent, note that its frontmatter fails
+[silently when it is not valid YAML](../claude-code/agent-frontmatter-yaml.md) —
+the residue of this refactor was two such agents that had never loaded on either
+runtime.
+
 ## Sidecars never run
 
 The CLI starts no sidecar manager, so a sidecar is inert wherever it is placed —
