@@ -15,6 +15,14 @@ Both runtimes call this, but they get one batch by different means:
     replaces the `sync-usage` sidecar, which never ran: the agy CLI does not
     start a sidecar manager at all (see `.agents/wiki/antigravity/`).
 
+The git work runs in a detached worker, not inline. Both runtimes cancel a hook
+that is still running when the turn or the session ends, and the push is a
+network round trip — around a second on a good link, which does not fit the
+budget. Claude Code is the tight one: it allows the whole SessionEnd batch
+1.5s, and derives that deadline only from hooks declared in settings.json, so
+the `timeout` this plugin declares does not raise it. Pass --foreground to do
+the work in this process instead; the tests use it to stay deterministic.
+
 No-ops when SKILL_USAGE_REPO is unset, when nothing changed, when the repo is
 mid-merge/rebase, or when throttled. Always exits 0.
 """
@@ -31,9 +39,39 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import usage_lib  # noqa: E402
 
 TIMEOUT = 15
+SELF = os.path.realpath(__file__)
 
 CACHE_ROOT = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
 STATE_PATH = os.path.join(CACHE_ROOT, "skill-usage", "last-sync")
+
+
+def relaunch_detached(argv: list[str]) -> bool:
+    """Re-run this script in its own session and return without waiting.
+
+    A plain background process is not enough. Claude Code spawns the hook into
+    its own process group and, on cancellation, signals the whole group, so a
+    worker that stayed in it would be killed alongside the hook. start_new_session
+    puts the worker in a session of its own, out of reach of that group signal.
+
+    The stdio redirects are just as load-bearing: the runner waits for the
+    hook's stdout and stderr to close, so a worker holding the inherited pipes
+    open would keep the session waiting exactly as long as running inline did.
+
+    Returns False if the worker could not be started, so the caller can fall
+    back to doing the work here rather than dropping the sync.
+    """
+    try:
+        subprocess.Popen(
+            [sys.executable, SELF, "--foreground", *argv],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+    except OSError:
+        return False
+    return True
 
 
 def git(repo: str, *args: str) -> subprocess.CompletedProcess:
@@ -60,7 +98,7 @@ def mid_operation(repo: str) -> bool:
 
 
 def throttled(min_interval: float) -> bool:
-    """True when a commit landed less than min_interval seconds ago.
+    """True when a sync attempt finished less than min_interval seconds ago.
 
     Read before the git work so a throttled turn costs a stat, not a subprocess.
     A missing or unreadable state file means "never synced", which lets the
@@ -77,6 +115,17 @@ def throttled(min_interval: float) -> bool:
 
 
 def record_sync() -> None:
+    """Stamp the throttle clock. Only ever called once the push has returned.
+
+    Ordering is the point. Stamped before the push, a worker killed mid-push
+    left behind a stamp for a sync that never landed, and the throttle then
+    skipped the retry. Stamped after, a killed worker leaves no stamp at all
+    and the next turn picks the work up.
+
+    A push that fails cleanly — offline, say — still stamps. The throttle exists
+    to collapse a session's turns into one commit, and withholding the stamp on
+    failure would make an offline machine commit on every turn instead.
+    """
     try:
         os.makedirs(os.path.dirname(STATE_PATH), exist_ok=True)
         with open(STATE_PATH, "w") as f:
@@ -138,18 +187,9 @@ def push(repo: str, counts: str) -> None:
     git(repo, "push")  # still failing just leaves it for the next session
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--min-interval",
-        type=float,
-        default=0.0,
-        metavar="SECONDS",
-        help="skip if a commit landed within this window (0 = never skip)",
-    )
-    args = parser.parse_args()
-
-    if throttled(args.min_interval):
+def sync(min_interval: float) -> int:
+    """Commit this machine's shard and push it. The slow half."""
+    if throttled(min_interval):
         return 0
 
     repo = usage_lib.resolve_repo()
@@ -180,9 +220,36 @@ def main() -> int:
     if commit.returncode != 0:
         return 0
 
-    record_sync()
     push(repo, counts)
+    record_sync()
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--min-interval",
+        type=float,
+        default=0.0,
+        metavar="SECONDS",
+        help="skip if a commit landed within this window (0 = never skip)",
+    )
+    parser.add_argument(
+        "--foreground",
+        action="store_true",
+        help="do the git work in this process instead of detaching a worker",
+    )
+    args = parser.parse_args()
+
+    # Checked here as well as in the worker so the Antigravity Stop hook, which
+    # fires every turn, costs one stat rather than a spawned interpreter.
+    if throttled(args.min_interval):
+        return 0
+
+    if not args.foreground and relaunch_detached(sys.argv[1:]):
+        return 0
+
+    return sync(args.min_interval)
 
 
 if __name__ == "__main__":

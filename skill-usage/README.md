@@ -74,6 +74,8 @@ The two runtimes dispatch skills differently, so each gets its own thin adapter 
 
 Counts accumulate during a session and are committed in a batch rather than per invocation. Claude Code gets that batching from `SessionEnd`, which fires once. Antigravity has no session-end event, so the flush hangs off `Stop` — which fires at the end of *every* turn — and `sync-usage.py --min-interval 1800` collapses a session's turns into roughly one commit. The tradeoff is that the last turn of a session may fall inside the window; those counts simply ride along with the next session's first eligible flush.
 
+The flush hands the git work to a detached worker and returns in a few milliseconds. It has to: both runtimes cancel a hook still running when the turn or session ends, and a push is a network round trip that does not fit the budget — Claude Code allows the whole `SessionEnd` batch 1.5s and derives that deadline only from hooks declared in `settings.json`, so the `timeout` this plugin declares does not raise it. The worker starts its own session, because the hook's entire process group is signalled on cancellation. Run `sync-usage.py --foreground` to do the work inline instead.
+
 The commit is scoped with `git commit --only` to this machine's shard, so unrelated staged work is untouched, and the sync skips a repo that is mid-merge or mid-rebase. Writes are atomic, and parallel sessions on one machine serialise through an `flock` held outside the repo.
 
 Every hook exits 0 on every path — malformed input, a missing or non-git repo, a failed push. A tracker that blocks a session is worse than one that misses a count.
