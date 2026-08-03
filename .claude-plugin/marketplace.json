@@ -33,7 +33,7 @@
       "name": "skill-usage",
       "source": "./skill-usage",
       "description": "Counts how often each skill is invoked and commits the totals to a git repo you choose. Runtime-agnostic; counts skills from every installed plugin.",
-      "version": "0.1.4"
+      "version": "0.1.5"
     }
   ]
 }

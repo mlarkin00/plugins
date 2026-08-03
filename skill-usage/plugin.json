@@ -1,6 +1,6 @@
 {
   "name": "skill-usage",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Counts how often each skill is invoked and commits the totals to a git repo you choose. Runtime-agnostic: works in Claude Code and Antigravity, and counts skills from every installed plugin.",
   "author": {
     "name": "Matt Larkin",
