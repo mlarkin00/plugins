@@ -44,6 +44,11 @@ claude plugin marketplace update mlarkin00-plugins && claude plugin update <plug
 # `agy plugin validate <path>` hard-fails on any plugin lacking a root plugin.json.
 HOME=$(mktemp -d) agy plugin install "$PWD"
 
+# Jetski & Antigravity ONLY: install/uninstall the hourly git polling systemd timer.
+# Do NOT use with Claude Code or clients that have proper marketplace/plugin install/update.
+./.agents/scripts/install-poll-service.sh
+./.agents/scripts/uninstall-poll-service.sh
+
 # Tests (stdlib unittest — pytest is not installed). Runs every suite.
 for p in active-skills llm-wiki memory-bank skill-usage; do (cd $p && python3 -m unittest discover -s tests -q); done
 ```
@@ -60,6 +65,7 @@ for p in active-skills llm-wiki memory-bank skill-usage; do (cd $p && python3 -m
 - Session-once work has no Antigravity equivalent: map it to `PreInvocation` **and gate it**, since that fires before every model call and blocks the loop. Gate on `conversationId`; if the hook injects context, cache and replay the payload rather than skipping, because `ephemeralMessage` is transient.
 - **Periodic work must be a gated `Stop` hook — never a sidecar.** The agy CLI starts no sidecar manager, so `sidecars/` is inert wherever it sits, and nothing outside `plugins/<name>/` is created, refreshed, or removed by `agy plugin install`/`uninstall`. `Stop` fires every turn, so gate on a timestamp file and detach the slow part (below).
 - **Slow or network work in a hook MUST go to a detached worker.** Claude Code cancels the whole `SessionEnd` batch after 1.5s and computes that budget only from `settings.json` hooks, so a plugin's own `timeout` cannot raise it. The worker MUST start its own session (`setsid`; Python `start_new_session=True`), because the hook's entire process group is signalled, and MUST send stdio to `/dev/null`, because the runner waits for those pipes to close. Reference shape: `skill-usage/scripts/sync-usage.py`; evidence: `@.agents/wiki/claude-code/sessionend-hook-deadline.md`.
+- **The hourly git polling systemd service (`mlarkin00-plugins-poll.timer`) must only be used with Jetski and Antigravity.** It must not be used with clients that have proper marketplace/plugin install/update mechanisms (e.g. Claude Code), where marketplace updates are handled natively by the client.
 
 ## Architecture & Constraints
 

@@ -1,0 +1,12 @@
+# NOTE: This refresh systemd service should only be used with Jetski and Antigravity.
+# It should not be used with clients that have proper marketplace/plugin install/update (e.g. Claude Code).
+[Unit]
+Description=Poll mlarkin00/plugins GitHub repo and automatically pull updates (Jetski/Antigravity only)
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/plugins/.agents/scripts/poll-repo.py
+WorkingDirectory=%h/plugins
+StandardOutput=journal
+StandardError=journal

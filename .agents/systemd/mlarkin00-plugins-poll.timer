@@ -1,0 +1,12 @@
+# NOTE: This refresh systemd service should only be used with Jetski and Antigravity.
+# It should not be used with clients that have proper marketplace/plugin install/update (e.g. Claude Code).
+[Unit]
+Description=Timer to poll mlarkin00/plugins GitHub repo every hour (Jetski/Antigravity only)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=mlarkin00-plugins-poll.service
+
+[Install]
+WantedBy=timers.target
