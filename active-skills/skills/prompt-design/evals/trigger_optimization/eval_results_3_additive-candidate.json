@@ -1,0 +1,231 @@
+{
+  "skill": "prompt-design",
+  "runs_per_query": 3,
+  "results": [
+    {
+      "query": "Write me a prompt I can paste into Gemini that summarizes our sprint retro for the eng leadership staff meeting.",
+      "should_trigger": true,
+      "trigger_rate": 0.3333333333333333,
+      "fired": [
+        "",
+        "",
+        "active-skills:prompt-design"
+      ],
+      "pass": false
+    },
+    {
+      "query": "This system prompt keeps giving me walls of text and I can't work out why. Fix it: 'You are a helpful assistant. Review the support ticket and give a good summary. Don't be too long.'",
+      "should_trigger": true,
+      "trigger_rate": 1.0,
+      "fired": [
+        "active-skills:prompt-design",
+        "active-skills:prompt-design",
+        "active-skills:prompt-design"
+      ],
+      "pass": true
+    },
+    {
+      "query": "I want to set up an LLM call that classifies incoming support tickets into one of five categories and returns JSON. What should I tell the model?",
+      "should_trigger": true,
+      "trigger_rate": 1.0,
+      "fired": [
+        "active-skills:prompt-design",
+        "active-skills:prompt-design",
+        "prompt-design"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Our chatbot keeps inventing product features that don't exist. How should I rewrite its instructions so it stops?",
+      "should_trigger": true,
+      "trigger_rate": 0.3333333333333333,
+      "fired": [
+        "active-skills:prompt-design",
+        "",
+        ""
+      ],
+      "pass": false
+    },
+    {
+      "query": "Turn this into something a model will actually follow: 'make the docs better'",
+      "should_trigger": true,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": false
+    },
+    {
+      "query": "I need a reusable prompt template that generates unit test descriptions from a function signature.",
+      "should_trigger": true,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": false
+    },
+    {
+      "query": "Can you tighten up the system prompt for our code review bot? It ignores about half of what we tell it. Here it is: 'You are a code reviewer. Look at the diff and flag anything concerning. Be thorough but concise. Follow our style guide.'",
+      "should_trigger": true,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": false
+    },
+    {
+      "query": "Help me phrase an instruction to Claude so it always returns a markdown table with exactly three columns and nothing else.",
+      "should_trigger": true,
+      "trigger_rate": 0.3333333333333333,
+      "fired": [
+        "active-skills:prompt-design",
+        "",
+        ""
+      ],
+      "pass": false
+    },
+    {
+      "query": "I've been iterating on this for an hour and the output is still generic. What am I doing wrong? 'Write a professional and engaging blog post about our new feature. Make it compelling.'",
+      "should_trigger": true,
+      "trigger_rate": 1.0,
+      "fired": [
+        "active-skills:prompt-design",
+        "active-skills:prompt-design",
+        "active-skills:prompt-design"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Draft the instructions we would give an AI agent that triages bug reports \u2014 what it should look at and what it should output.",
+      "should_trigger": true,
+      "trigger_rate": 1.0,
+      "fired": [
+        "active-skills:prompt-design",
+        "active-skills:prompt-design",
+        "active-skills:prompt-design"
+      ],
+      "pass": true
+    },
+    {
+      "query": "Run the Vertex AI Prompt Optimizer on this prompt and give me steering hints between iterations.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "/new-prompt \"add cursor-based pagination to the users endpoint\"",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Write our Q3 release notes from the entries in CHANGELOG.md.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Create a skill that validates our Terraform modules before apply.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Update AGENTS.md so it documents the new test command.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Why is this Python function returning None when the input list is empty?",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Refactor this React component to use hooks instead of a class.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "What does Claude Opus cost per million output tokens right now?",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Summarize this design doc in three bullets.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "",
+        "",
+        ""
+      ],
+      "pass": true
+    },
+    {
+      "query": "Set up a Cloud Build trigger that fires on push to main.",
+      "should_trigger": false,
+      "trigger_rate": 0.0,
+      "fired": [
+        "active-skills:cloud-build-triggers",
+        "active-skills:cloud-build-triggers",
+        "active-skills:cloud-build-triggers"
+      ],
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "passed": 14,
+    "failed": 6
+  }
+}

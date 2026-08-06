@@ -7,6 +7,16 @@
       "prompt": "I need a prompt I can paste into Gemini that writes our sprint retro summary. It goes out to the eng leadership staff meeting, needs to stay under 300 words, and should have three sections: what shipped, what slipped, what we're changing next sprint. I've got last sprint's retro doc that came out well and I can paste it in as an example of the format. Nobody wants to read hedging language so it should be blunt about what slipped.",
       "expected_output": "A copy-pasteable TCREI prompt block ([TASK]/[CONTEXT]/[REFERENCES] or XML equivalent) with an action verb + specific persona + named output format in Task, the audience/word limit/three sections/blunt tone in Context, and a slot for the user's prior retro doc in References. No unnecessary interview — audience, constraints, and ground truth were all supplied.",
       "trap": "Agent writes the retro summary itself instead of a prompt, or emits a prompt buried in paragraphs of explanation, or drops the 300-word limit and the three named sections.",
+      "expectations": [
+        "The response contains a prompt block delimited by bracket headers ([TASK]/[CONTEXT]/[REFERENCES]) or the XML equivalent (<task>/<context>/<references>)",
+        "The Task section names an action verb, a domain-specific persona (not 'helpful assistant', 'AI assistant', or a bare 'expert'), and a named output format",
+        "The Context section carries both the 300-word limit and all three named sections (what shipped / what slipped / what we're changing next sprint)",
+        "The Context section names eng leadership as the audience and expresses the blunt-about-slippage requirement as an affirmative directive rather than only as a 'do not hedge' prohibition",
+        "The References section provides a paste slot for the user's own prior retro doc and does not contain a fabricated example retro",
+        "The response is the prompt block plus at most two sentences of framing — no component-by-component breakdown of the choices",
+        "The response asks no clarifying questions, since audience, constraints, and ground truth were all supplied in the request",
+        "The response does not itself contain a written sprint retro summary"
+      ],
       "files": []
     },
     {
@@ -15,6 +25,14 @@
       "prompt": "make me a prompt for writing release notes",
       "expected_output": "A short batch of targeted questions closing the audience / constraints / ground-truth gaps (e.g. who reads them, is there a past release note to match, any length or format requirement), each with a suggested default so the user can confirm rather than compose. Should not dump a generic prompt as if the request were fully specified.",
       "trap": "Agent immediately produces a generic release-notes prompt with invented audience and format, presenting guesses as if they were requirements.",
+      "expectations": [
+        "The response asks two or three questions, delivered together in one turn rather than one at a time",
+        "At least two of the questions map onto distinct un-inventable fields: audience, hard constraints (length / required sections / format), and ground truth (an existing release note or style guide to match)",
+        "Every question carries a concrete suggested default or proposed answer, so the user can confirm rather than compose",
+        "The response does not emit a finished prompt block presented as ready to paste — or, if it offers a provisional draft, every invented specific in it is marked inline as an assumption",
+        "The response does not ask about anything inferable from the answers (tone, persona, section headings) — those are inferred, not interviewed",
+        "The response does not itself write release notes"
+      ],
       "files": []
     },
     {
@@ -23,6 +41,15 @@
       "prompt": "This prompt keeps giving me walls of text and I don't know why. Can you fix it? --- 'You are a helpful assistant. Review the customer support ticket and give a good summary. Don't be too long. Try not to miss anything important.'",
       "expected_output": "A revised prompt block that replaces the generic persona with a specific one, converts 'good'/'not too long'/'not miss anything' into measurable constraints (word or sentence count, named sections/fields), flips the negative constraints to affirmative directives, and notes the missing References component. Followed by a brief list of what changed and why.",
       "trap": "Agent adds more instructions and a generic 'expert' role without quantifying the vague terms, leaving 'don't be too long' as an unenforceable negative constraint — so the wall-of-text problem is not actually diagnosed.",
+      "expectations": [
+        "The revised prompt replaces 'helpful assistant' with a specific, domain-named persona",
+        "'Don't be too long' is replaced by a checkable numeric limit — a word, sentence, or bullet count",
+        "'Try not to miss anything important' is replaced by named sections or fields the summary must contain",
+        "At least one negative constraint from the original is restated as an affirmative directive naming what to do rather than what to avoid",
+        "The response identifies References as the absent component and says what would fill it, without inventing an example support ticket",
+        "The response ends with a short list of what changed and why — in this path the reasoning is part of the deliverable, not padding",
+        "The revised prompt is shorter or comparable in instruction count to a version that merely appends rules — it does not fix vagueness by adding more prose"
+      ],
       "files": []
     }
   ]

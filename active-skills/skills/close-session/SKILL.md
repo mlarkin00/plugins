@@ -34,7 +34,7 @@ A **follow-up task** is work still to do → `.agents/TODO.md`. A **lesson learn
 
 The trap this exists to prevent: a completed TODO carries the resolution note that explains *why* the fix was what it was, and pruning the task in Step 1 deletes that evidence. Before pruning any completed item, ask whether its resolution passes the scope test — if so, mint the concept **first**, then prune.
 
-If the project has no bundle, scaffold one (`/llm-wiki:init .agents/wiki`, or by hand) and add the `@.agents/wiki/index.md` import to the briefing files. After adding concepts, regenerate and validate (`/llm-wiki:index`, `/llm-wiki:validate`) so the index committed in Step 4 is current. Full model: `managing-agent-instructions` Phase 6.
+If the project has no bundle, scaffold one — `/llm-wiki:init .agents/wiki` also wires discovery into the briefing files, which is per-file and not a single line everywhere (bare `@.agents/wiki/index.md` in a standalone `CLAUDE.md`; the catalog **inlined** in `AGENTS.md`/`GEMINI.md`, which `agy` reads but never imports from). After adding concepts, regenerate and validate (`/llm-wiki:index`, `/llm-wiki:validate`) so the index committed in Step 4 is current — `index` also re-syncs the inlined copies, which go stale silently. Full model: `managing-agent-instructions` Phase 6.
 
 ## Step 2: Stage and Review Changes
 
