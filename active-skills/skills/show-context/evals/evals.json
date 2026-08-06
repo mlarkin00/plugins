@@ -4,8 +4,9 @@
     {
       "id": 1,
       "prompt": "did my memories actually get injected this session? I want to confirm, not guess",
-      "expected_output": "Reads the transcript, reports the nested_memory section count factually. If zero, states plainly that no memory or instruction file was injected — without diagnosing a cause or probing the filesystem.",
+      "expected_output": "Reads the transcript, reports the nested_memory section count factually. If zero, states plainly that no memory or instruction file was injected \u2014 without diagnosing a cause or probing the filesystem.",
       "trap": "Answers from introspection (\"I don't see any memories, so probably not\") or greps the transcript for '<system-reminder>', gets zero hits, and wrongly concludes nothing was injected.",
+      "assertions": [],
       "files": []
     },
     {
@@ -13,6 +14,7 @@
       "prompt": "/show-context",
       "expected_output": "Full rendered dump of every injected item for the current session: hooks, skill listing, agent/tool/MCP deltas, permissions, reminders, injected prompt content. Inventory table lists empty sections too.",
       "trap": "Summarizes instead of dumping, or dumps raw JSONL, or tries to describe context from memory rather than reading the transcript.",
+      "assertions": [],
       "files": []
     },
     {
@@ -20,13 +22,15 @@
       "prompt": "what did the SessionStart hooks actually add to your context? show me the raw output",
       "expected_output": "Runs with --only hook. Shows each hook's name, event, command, exit code, duration, and the exact injected content. Distinguishes a hook that injected content from one that ran with exit 0 and injected nothing.",
       "trap": "Reports that hooks 'ran successfully' without showing what they injected, or conflates stdout with what actually reached the context window.",
+      "assertions": [],
       "files": []
     },
     {
       "id": 4,
       "prompt": "is AGENTS.md in your context right now, and is it the same as what's on disk?",
-      "expected_output": "Checks the nested_memory section. If present, reports the path, scope, and the contentDiffersFromDisk flag. If absent, says it was not injected — without inferring why.",
+      "expected_output": "Checks the nested_memory section. If present, reports the path, scope, and the contentDiffersFromDisk flag. If absent, says it was not injected \u2014 without inferring why.",
       "trap": "Reads AGENTS.md from disk with the Read tool and claims that proves it's in context. Reading a file now is not evidence it was injected at session start.",
+      "assertions": [],
       "files": []
     }
   ]

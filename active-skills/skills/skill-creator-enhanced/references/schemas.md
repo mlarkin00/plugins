@@ -2,6 +2,14 @@
 
 This document defines the JSON schemas used by skill-creator.
 
+**`assertions` on the way in, `expectations` on the way out.** The two names refer
+to the same statements at different stages and are not interchangeable: what an
+author writes in `evals.json` / `eval_metadata.json` is `assertions`; what the
+grader emits in `grading.json` — each one paired with `passed` and `evidence` — is
+`expectations`. The viewer and `aggregate_benchmark.py` read the output name; a
+grader handed the wrong key finds an empty list and grades nothing, silently. Do
+not "unify" them without changing both sides.
+
 ---
 
 ## evals.json
@@ -14,10 +22,11 @@ Defines the evals for a skill. Located at `evals/evals.json` within the skill di
   "evals": [
     {
       "id": 1,
+      "name": "descriptive-eval-name",
       "prompt": "User's example prompt",
       "expected_output": "Description of expected result",
       "files": ["evals/files/sample1.pdf"],
-      "expectations": ["The output includes X", "The skill used script Y"]
+      "assertions": ["The output includes X", "The skill used script Y"]
     }
   ]
 }
@@ -27,10 +36,112 @@ Defines the evals for a skill. Located at `evals/evals.json` within the skill di
 
 - `skill_name`: Name matching the skill's frontmatter
 - `evals[].id`: Unique integer identifier
+- `evals[].name`: Optional short descriptive name, also used as the run directory name
 - `evals[].prompt`: The task to execute
 - `evals[].expected_output`: Human-readable description of success
 - `evals[].files`: Optional list of input file paths (relative to skill root)
-- `evals[].expectations`: List of verifiable statements
+- `evals[].assertions`: List of verifiable statements. Becomes `expectations` in `grading.json` once graded — see the note at the top of this file.
+
+---
+
+## Trigger eval set
+
+Input to `run_eval.py` / `run_loop.py`. A flat array — distinct from `evals.json`,
+which describes *task* evals. Queries must be self-contained: one that cannot be
+answered without an artifact the session cannot see ("tighten up our bot's system
+prompt", with no prompt pasted) makes the model go looking for the file and ask
+for it, which scores as a non-trigger and tests nothing.
+
+```json
+[
+  { "query": "Write me a prompt I can paste into Gemini that…", "should_trigger": true },
+  { "query": "Set up a Cloud Build trigger that fires on push to main.", "should_trigger": false }
+]
+```
+
+---
+
+## Trigger eval results
+
+Output of `run_eval.py`.
+
+```json
+{
+  "skill_name": "prompt-design",
+  "description": "the description under test",
+  "mode": "live",
+  "results": [
+    {
+      "query": "…",
+      "should_trigger": true,
+      "trigger_rate": 0.65,
+      "triggers": 13,
+      "runs": 20,
+      "contaminated": 0,
+      "fired": ["active-skills:prompt-design", "", "active-skills:new-prompt"],
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 22, "passed": 18, "failed": 4, "unmeasured": 0,
+    "contaminated_runs": 0,
+    "positive_rate": 0.615, "positive_observations": 200,
+    "positive_ci": [0.548, 0.682],
+    "negative_rate": 0.0, "negative_observations": 240,
+    "mde": 0.098
+  }
+}
+```
+
+**Fields that are easy to misread:**
+
+- `summary.positive_rate` — the number to compare descriptions on. `passed`/`failed`
+  are per-query verdicts against a 0.5 threshold and are **not** a usable signal at
+  small sample sizes; they discretize a rate into a coin flip.
+- `summary.mde` — the smallest difference this run could detect. A gap smaller than
+  this is not a small win, it is no information.
+- `results[].runs` — runs that were **scored**, already excluding contaminated ones.
+- `results[].contaminated` — runs won by an installed copy of the skill under test
+  (probe mode only). Excluded from `trigger_rate`, not counted as misses.
+- `results[].pass` — `true` / `false` / **`null`**. Null means every run was
+  contaminated: unmeasured, which is not the same as failed.
+- `results[].fired` — the skill that won each run, in completion order; `""` when
+  nothing fired. This is what distinguishes "a competitor took it" from "nothing
+  matched" — opposite problems needing opposite fixes.
+
+---
+
+## Optimization run results
+
+Output of `run_loop.py`, also written to `<results-dir>/results.json` and rendered
+to `report.md`.
+
+```json
+{
+  "exit_reason": "no detectable improvement in 2 consecutive iterations",
+  "mode": "probe", "runs_per_query": 20, "min_effect": 0.10,
+  "original_description": "…", "best_description": "…",
+  "best_positive_rate": 0.615, "best_observations": 200,
+  "iterations_run": 3, "sessions_spent": 603,
+  "history": [
+    {
+      "iteration": 1, "description": "…",
+      "positive_rate": 0.615, "positive_observations": 200,
+      "positive_ci": [0.548, 0.682], "negative_rate": 0.0,
+      "mde": 0.098, "contaminated_runs": 0,
+      "verdict": "improved", "delta": 0.115, "adopted": true,
+      "results": []
+    }
+  ]
+}
+```
+
+- `history[].verdict` — `incumbent` | `improved` | `inconclusive` | `worse`.
+- `history[].adopted` — whether this description became the incumbent. Iteration 0
+  is always adopted as the baseline.
+- `best_description` is the **original** when nothing was ever `improved`. Check for
+  an `improved` verdict before reporting a gain.
+- `sessions_spent` — nested `claude -p` sessions, the unit of cost.
 
 ---
 
@@ -150,7 +261,7 @@ Output from the grader agent. Located at `<run-dir>/grading.json`.
 
 **Fields:**
 
-- `expectations[]`: Graded expectations with evidence
+- `expectations[]`: The eval's `assertions`, graded — each with `text`, `passed`, and `evidence`. These three field names are exact; the viewer depends on them.
 - `summary`: Aggregate pass/fail counts
 - `execution_metrics`: Tool usage and output size (from executor's metrics.json)
 - `timing`: Wall clock timing (from timing.json)

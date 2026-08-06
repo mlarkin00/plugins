@@ -78,5 +78,13 @@
   {
     "query": "Set up a Cloud Build trigger that fires on push to main.",
     "should_trigger": false
+  },
+  {
+    "query": "My pdf-extract skill isn't firing when people ask about invoices, but it fires on half the spreadsheet questions. Reword the description so it triggers reliably on the invoice cases without over-claiming, and check the new wording actually does better before I ship it.",
+    "should_trigger": false
+  },
+  {
+    "query": "I'm building a skill that converts Figma exports into React components. Write the description field so it fires on Figma and design-handoff phrasing but not on generic CSS questions, and put together the test cases that would prove it.",
+    "should_trigger": false
   }
 ]

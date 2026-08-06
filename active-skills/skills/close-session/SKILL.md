@@ -192,12 +192,10 @@ If the user explicitly says "push anyway", "force push", or similar — merge th
 
 **Follows:**
 
-- Any session that modifies project files
-- `executing-plans` — run after all plan steps complete, before declaring done
-- `subagent-driven-development` — run after all tasks complete
+- Any session that modifies project files — this runs last, after the work itself is finished, regardless of whether the feature is "done"
 
-**Distinct from `finishing-a-development-branch`:**
+**Invokes:**
 
-- `finishing-a-development-branch` guides the _merge strategy decision_ (merge locally / open PR / discard) when you need to deliberate how completed work should land
-- `close-session` handles _session hygiene_ (docs + straightforward merge of related branches to `main` + safe push) at the end of any session, regardless of whether the feature is "done"
-- Use `finishing-a-development-branch` first when the integration strategy is non-obvious (e.g. the work should become a PR rather than a direct merge); otherwise `close-session`'s Step 5 merge is sufficient
+- `managing-agent-instructions` (Step 1) — updates the briefing files, `.agents/TODO.md`, `DESIGN.md`, and the `.agents/wiki/` bundle
+
+**Scope boundary:** this skill handles _session hygiene_ — docs, commit, a straightforward merge of this session's branches to `main`, and a safe push. It does not deliberate _integration strategy_. When how the work should land is an actual decision (open a PR instead of merging, stack it on another branch, discard it), Step 5 stops and asks rather than merging by default.

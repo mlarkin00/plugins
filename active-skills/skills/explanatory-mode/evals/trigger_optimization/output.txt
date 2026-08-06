@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/matthewlarkin/agentic/agent-skills/active-skills/skill-creator-enhanced/scripts/run_loop.py", line 18, in <module>
-    import anthropic
-ModuleNotFoundError: No module named 'anthropic'

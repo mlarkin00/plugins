@@ -15,7 +15,7 @@
     },
     {
       "id": 2,
-      "prompt": "Review my SKILL.md in active-skills/refresh-skills and fix whatever isn't following best practices.",
+      "prompt": "Review my SKILL.md in active-skills/git-sync and fix whatever isn't following best practices.",
       "expected_output": "The agent audits the skill, presents findings, then implements the fixes: mechanical/unambiguous ones directly, judgment calls proposed first, snapshots before editing, and re-runs the audit to verify the fixes landed.",
       "trap": "The agent stops at a review and hands back a list of suggestions instead of implementing the improvements and re-verifying them.",
       "assertions": [

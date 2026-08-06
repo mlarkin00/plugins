@@ -73,7 +73,7 @@ Check available MCPs - if useful for research (searching docs, finding similar s
 
 Based on the user interview, fill in these components:
 
-- **name**: Skill identifier. Must be 1-64 chars, kebab-case. Use simple and descriptive names (e.g., `code-design` instead of `designing-code`, `doc-review` instead of `reviewing-docs`). Avoid gerund forms (verbs ending in -ing).
+- **name**: Skill identifier. Must be 1-64 chars, kebab-case. Use simple and descriptive names (e.g., `pdf-extract` instead of `extracting-pdfs`, `doc-review` instead of `reviewing-docs`). Avoid gerund forms (verbs ending in -ing).
 - **description**: The primary triggering mechanism — include both what the skill does AND specific contexts for when to use it. Must start with "Use when..." or "Use this skill when...". Must NOT summarize the workflow or list steps (agents may follow the description instead of reading the body). All "when to use" info goes here, not in the body. Note: currently agents may have a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, make skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal sales data.", write "How to build a simple fast dashboard to display internal sales data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
 - **category**: The taxonomy classification under `metadata` in YAML frontmatter. All skills must belong to one of these 9 categories:
   - `library-reference` (Static API guides, library documentation, framework design rules)
@@ -481,24 +481,71 @@ This step matters — bad eval queries lead to bad descriptions.
 
 ### Step 3: Run the optimization loop
 
-Tell the user: "This will take some time — I'll run the optimization loop in the background and check on it periodically."
-
-Save the eval set to the workspace, then run in the background:
+**Warn the user about cost before starting.** This is the expensive part of the skill: every run of every query is a real nested `claude -p` session. The loop quotes its own budget in a preflight and waits for confirmation.
 
 ```bash
 python -m scripts.run_loop \
   --eval-set <path-to-trigger-eval.json> \
   --skill-path <path-to-skill> \
   --model <model-id-powering-this-session> \
-  --max-iterations 5 \
+  --runs-per-query 20 --min-effect 0.10 \
+  --results-dir <workspace>/optimization \
   --verbose
 ```
 
 Use the model ID from your system prompt (the one powering the current session) so the triggering test matches what the user actually experiences.
 
-While it runs, periodically tail the output to give the user updates on which iteration it's on and what the scores look like.
+#### Sample size is the whole ballgame
 
-This handles the full optimization loop automatically. It splits the eval set into 60% train and 40% held-out test, evaluates the current description (running each query 3 times to get a reliable trigger rate), then calls the agent with extended thinking to propose improvements based on what failed. It re-evaluates each new description on both train and test, iterating up to 5 times. When it's done, it opens an HTML report in the browser showing the results per iteration and returns JSON with `best_description` — selected by test score rather than train score to avoid overfitting.
+Two descriptions are compared on their **aggregate positive trigger rate**. How large a difference that can resolve depends entirely on how many runs you buy:
+
+| runs/query | observations (10 positives) | smallest detectable difference | sessions per arm |
+| ---: | ---: | ---: | ---: |
+| 3 | 30 | **0.253** | 30 |
+| 10 | 100 | 0.139 | 100 |
+| 20 (default) | 200 | 0.098 | 200 |
+| 30 | 300 | 0.080 | 300 |
+
+At 3 runs per query — the old default — two descriptions must differ by **25 percentage points** before the difference is real. A run at that size once reported "16/20 vs 14/20", which looked like a 2-point win and was a true difference of 0.000. `--min-effect` is the smallest difference worth detecting; preflight aborts if the configuration cannot resolve it, and tells you what it would cost. `--force` overrides.
+
+#### `inconclusive` is a normal outcome, not a failure
+
+Each iteration returns `improved`, `inconclusive`, or `worse`. **Inconclusive means the data cannot tell the two apart** — it is the honest answer, and for a description that is already good it is the most common one. Do not report it to the user as the tool being broken, and never adopt a candidate the loop called inconclusive: that is how run-to-run variance gets promoted into a shipped description. `--patience` (default 2) stops the loop after N consecutive inconclusive iterations.
+
+#### If the skill is already installed
+
+The loop measures a *candidate* description by injecting it under a throwaway name. An installed copy of the same skill carries the **shipped** description, competes for the same call, and usually wins — so those runs measure nothing about the candidate.
+
+This is handled automatically: probe runs pass `--settings '{"enabledPlugins":{"<plugin>@<marketplace>":false}}'`, which hides the plugin from that invocation only and leaves the user's environment untouched. Preflight says when it is doing this. Two caveats worth stating to the user:
+
+- The unit is the **plugin**, so sibling skills in the same plugin are hidden too. Fine for positives; it removes the real competitors for near-miss queries.
+- A copy at `~/.claude/skills/<name>/` is not a plugin and cannot be hidden this way. Preflight warns; move it aside.
+
+Any run the installed copy still wins is counted as `contaminated`, excluded from the rates, and reported. A query whose runs were *all* contaminated reports `pass: null` / `UNMEAS` — unmeasured, which is not the same as failed.
+
+#### Measuring the shipped description instead
+
+To measure what a skill **already ships with**, against its real competitors, use live mode. It reports which skill won each query — what you need when several skills overlap:
+
+```bash
+python -m scripts.run_eval \
+  --eval-set <path-to-trigger-eval.json> \
+  --skill-path <path-to-skill> \
+  --mode live --cwd "$(mktemp -d)" \
+  --runs-per-query 10 --timeout 120 --verbose
+```
+
+Run from an empty `--cwd`: a directory full of source sends the nested session reading code instead of choosing a skill. Live mode cannot evaluate a candidate description — it answers with whatever is installed — so `run_loop.py` in live mode measures the baseline once and stops.
+
+#### While it runs, and if you stop it
+
+The markdown report at `<results-dir>/report.md` is rewritten after every iteration, so `cat` it to give the user progress. It carries a **"fired instead"** column: a positive scoring low because a *competing* skill won it is a boundary problem, and one scoring low because nothing fired is a coverage problem — they need opposite fixes.
+
+If a run is aborted, sweep any nested sessions that outlived it — otherwise they keep running and keep billing:
+
+```bash
+python -m scripts.run_eval --cleanup [--dry-run]
+```
 
 ### How skill triggering works
 
@@ -508,7 +555,9 @@ This means your eval queries should be substantive enough that the agent would a
 
 ### Step 4: Apply the result
 
-Take `best_description` from the JSON output and update the skill's SKILL.md frontmatter. Show the user before/after and report the scores.
+Take `best_description` from the JSON output and update the skill's SKILL.md frontmatter — but **only if some iteration was actually `improved`**. When every iteration came back `inconclusive`, `best_description` is the description you started with, and the correct report to the user is "no candidate beat the original at this sample size", not a claim of improvement.
+
+Show before/after, the positive trigger rate with its confidence interval, and the detectable difference the run was sized for. A rate quoted without the interval invites the reader to treat noise as a result.
 
 ---
 
@@ -553,7 +602,7 @@ If you're in a Collaborative Sandbox environment, the main things to know are:
 - After running tests, you should always generate the eval viewer for the human to look at examples before revising the skill yourself and trying to make corrections, using `generate_review.py` (not writing your own boutique html code). Sorry in advance but I'm gonna go all caps here: GENERATE THE EVAL VIEWER _BEFORE_ evaluating inputs yourself. You want to get them in front of the human ASAP!
 - Feedback works differently: since there's no running server, the viewer's "Submit All Reviews" button will download `feedback.json` as a file. You can then read it from there (you may have to request access first).
 - Packaging works — `package_skill.py` just needs Python and a filesystem.
-- Description optimization (`run_loop.py` / `run_eval.py`) should work just fine since it uses the agent CLI via subprocess, not a browser, but please save it until you've fully finished making the skill and the user agrees it's in good shape.
+- Description optimization (`run_loop.py` / `run_eval.py`) should work just fine since it uses the agent CLI via subprocess, not a browser — it needs no API key and inherits whatever auth `claude` already has. Save it until you've fully finished making the skill and the user agrees it's in good shape, and get their explicit go-ahead on the session count preflight quotes: a default run is ~200 sessions per iteration.
 
 ---
 
@@ -568,6 +617,15 @@ The agents/ directory contains instructions for specialized subagents. Read them
 The references/ directory has additional documentation:
 
 - `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
+
+The scripts/ directory, for description optimization:
+
+- `scripts/run_loop.py` — the optimization loop: preflight, measure, decide, propose
+- `scripts/run_eval.py` — one measurement pass; also `--cleanup` for orphaned sessions
+- `scripts/stats.py` — trigger rates, confidence intervals, detectable effect. Run it directly (`python -m scripts.stats`) for self-tests, or pass it stored result files to recompute verdicts without spending anything
+- `scripts/propose.py` — asks a model for a better description, via `claude -p`
+- `scripts/generate_report.py` — renders a run as markdown
+- `scripts/improve_description.py` — **deprecated shim**; use `scripts/propose.py`
 
 ---
 

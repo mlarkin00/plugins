@@ -8,7 +8,8 @@
         "Uses 'gcloud compute instances list'",
         "Includes --project=project-x",
         "Uses --limit or --format to reduce data"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "I need to check the status of a cloud run service named 'my-service' in us-central1",
@@ -17,7 +18,8 @@
         "Uses 'gcloud run services describe my-service'",
         "Includes --region=us-central1",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Find all buckets in GCS for project 'finance-prod'",
@@ -25,7 +27,8 @@
       "assertions": [
         "Uses 'gcloud storage buckets list'",
         "Includes --project=finance-prod"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Describe the pubsub topic 'updates-topic'",
@@ -33,7 +36,8 @@
       "assertions": [
         "Calls 'gcloud help pubsub topics describe' first",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Show me the logs for the deployment 'web-app' in gcloud",
@@ -41,7 +45,8 @@
       "assertions": [
         "Uses 'gcloud logging read' or service-specific logging command",
         "Filters by resource or service name"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "List all regions available in my project 'my-dev-project'",
@@ -49,7 +54,8 @@
       "assertions": [
         "Uses 'gcloud compute regions list'",
         "Includes --project=my-dev-project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "I want to see the details of a secret named 'api-key'",
@@ -57,7 +63,8 @@
       "assertions": [
         "Uses 'gcloud secrets versions access' or 'gcloud secrets describe'",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Check if a firewall rule named 'allow-http' exists",
@@ -65,7 +72,8 @@
       "assertions": [
         "Uses 'gcloud compute firewall-rules describe allow-http'",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "List all storage buckets",
@@ -73,7 +81,8 @@
       "assertions": [
         "Uses 'gcloud storage buckets list'",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Query the status of operation 'op.12345'",
@@ -81,7 +90,8 @@
       "assertions": [
         "Uses 'gcloud compute operations describe' or similar",
         "Includes --project"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Write a python script to list gcs buckets",
@@ -89,70 +99,80 @@
       "assertions": [
         "Does NOT exclusively use gcloud CLI instructions",
         "Suggests using the Google Cloud Python Client Library"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Debug this java code using the cloud storage client library",
       "trap": "Near-miss; out of scope for gcloud CLI skill.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "How do I authenticate my local app to gcp?",
       "trap": "Near-miss; may be better handled by a dedicated auth skill.",
       "assertions": [
         "Mentions 'gcloud auth application-default login' but acknowledges it's for ADC"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Deploy this kubernetes manifest",
       "trap": "Near-miss; should use 'kubectl' or a K8s-specific skill.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill for manifest deployment"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Fix this terraform code for a vpc",
       "trap": "Near-miss; should use a Terraform skill.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Explain how IAM roles work",
       "trap": "Near-miss; general knowledge task.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "List files in my local directory",
       "trap": "Near-miss; standard shell task.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Create a new git branch",
       "trap": "Near-miss; Git task.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "Help me with AWS s3",
       "trap": "Near-miss; wrong cloud provider.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     },
     {
       "prompt": "How do I setup a new git repo?",
       "trap": "Near-miss; Git task.",
       "assertions": [
         "Does NOT trigger gcloud CLI skill"
-      ]
+      ],
+      "files": []
     }
   ]
 }

@@ -1,24 +1,30 @@
 {
-  "cases": [
+  "skill_name": "managing-agent-instructions",
+  "evals": [
     {
+      "id": 0,
       "prompt": "Audit my CLAUDE.md file and tell me how it looks.",
       "trap": "The agent provides a vague 'looks good' or makes updates without a quality report.",
       "assertions": [
         "The agent outputs a structured 'Agent Instruction Quality Report'.",
         "The report includes scores for different criteria (Commands, Architecture, etc.).",
         "The agent does not modify files until the report is presented."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 1,
       "prompt": "Review GEMINI.md and suggest improvements.",
       "trap": "The agent only reviews GEMINI.md and ignores the possibility of conflicting instructions in the other files.",
       "assertions": [
         "The agent checks AGENTS.md and CLAUDE.md for instructions that conflict with GEMINI.md.",
         "The agent treats the three as independent standalone files, not mirrors, and does not propose symlinking them.",
         "The agent uses the scoring rubric to identify specific gaps in GEMINI.md."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 2,
       "prompt": "Our CLAUDE.md and GEMINI.md are symlinks to AGENTS.md. Clean up the agent instruction files.",
       "trap": "The agent leaves the symlinks in place, or edits a file while it is still a symlink (silently mutating the shared target).",
       "assertions": [
@@ -26,48 +32,59 @@
         "The agent de-symlinks them into standalone regular files with the same content before editing (e.g., scripts/analyze-agent-docs.sh --fix), leaving AGENTS.md untouched by the removal.",
         "After remediation, none of AGENTS.md, GEMINI.md, or CLAUDE.md remains a symlink.",
         "The agent does not recreate any symlink to keep the files in sync."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 3,
       "prompt": "Create an instruction file for this project.",
       "trap": "The agent defaults to AGENTS.md and doesn't mention the others, or vice-versa.",
       "assertions": [
         "The agent asks if the user has a preferred filename (AGENTS.md, CLAUDE.md, or GEMINI.md).",
         "The agent suggests creating standalone files for each assistant to maintain consistency if multiple tools are used."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 4,
       "prompt": "Create an AGENTS.md for this project that helps me work better.",
       "trap": "The agent creates a 500-line document including the history of the project and full README details.",
       "assertions": [
         "The document is under 100 lines.",
         "The document includes a section for Operational Commands with exact strings.",
         "The document does not duplicate rules found in .eslintrc."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 5,
       "prompt": "Update GEMINI.md with the new linting rule we just agreed on.",
       "trap": "The agent updates GEMINI.md but leaves AGENTS.md and CLAUDE.md outdated.",
       "assertions": [
         "The agent proposes aligning and updating AGENTS.md and CLAUDE.md as standalone files.",
         "The update is concise and follows the third-person imperative style."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 6,
       "prompt": "How do I run the tests for the auth module?",
       "trap": "The agent says 'check package.json' or 'run npm test'.",
       "assertions": [
         "The agent checks the instruction file for a specific operational command for the auth module.",
         "The agent provides an exact command string."
-      ]
+      ],
+      "files": []
     },
     {
+      "id": 7,
       "prompt": "I keep forgetting to use the StorageWrapper. Can you add a rule about that?",
       "trap": "The agent adds a paragraph explaining why StorageWrapper is important.",
       "assertions": [
         "The agent adds a single-line constraint to the instruction file.",
         "The rule is 'Never use localStorage directly; use the StorageWrapper utility.'"
-      ]
+      ],
+      "files": []
     }
   ]
 }
