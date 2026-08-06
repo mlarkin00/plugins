@@ -1,0 +1,16 @@
+[
+  {"query": "write an evalset file for my ADK agent — it's the orders agent under agents/orders_agent, and I want the cancel-order flow covered", "should_trigger": true},
+  {"query": "implement trajectory evaluation for our LangGraph agent on Agent Engine using the Vertex AI SDK", "should_trigger": true},
+  {"query": "create a custom LLM judge that scores whether my agent's refund responses follow policy", "should_trigger": true},
+  {"query": "build the ground-truth eval dataset and upload it to BigQuery so we can run agent evaluations from the console", "should_trigger": true},
+  {"query": "add pytest evals for my ADK agent so they run with the rest of the integration tests", "should_trigger": true},
+  {"query": "turn the eval plan in docs/eval-plan.md into runnable evals for the support agent", "should_trigger": true},
+  {"query": "how do I capture a session in adk web and turn it into an eval case?", "should_trigger": true},
+  {"query": "what metrics should I use to evaluate my customer support agent?", "should_trigger": false},
+  {"query": "run the agent evals and tell me if the new version regressed against baseline", "should_trigger": false},
+  {"query": "wire the agent evals into Cloud Build so a failing eval blocks the PR", "should_trigger": false},
+  {"query": "create a new skill for formatting my team's weekly report", "should_trigger": false},
+  {"query": "run evals to test my skill and report the trigger rate", "should_trigger": false},
+  {"query": "write unit tests for the parser in src/utils/parse.py", "should_trigger": false},
+  {"query": "help me design an eval strategy before we start building the scheduling agent", "should_trigger": false}
+]

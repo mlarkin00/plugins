@@ -1,0 +1,16 @@
+[
+  {"query": "how should I evaluate my customer-support agent that's deployed on Agent Engine? it handles order lookups and refunds via three tools", "should_trigger": true},
+  {"query": "what metrics make sense for measuring whether my ADK agent is calling its tools correctly", "should_trigger": true},
+  {"query": "help me build a golden dataset for our internal RAG agent on Vertex — we have about 3 months of production logs", "should_trigger": true},
+  {"query": "we're about to start building a scheduling agent with the ADK. before we write code, I want to define an eval strategy and quality thresholds", "should_trigger": true},
+  {"query": "my team lead wants an eval plan doc for the gemini enterprise agent we're shipping in Q4 — what should go in it?", "should_trigger": true},
+  {"query": "should we use an LLM judge or exact match scoring for our agent's responses? what are the tradeoffs", "should_trigger": true},
+  {"query": "how do I test my agent against prompt injection before launch", "should_trigger": true},
+  {"query": "write the evalset JSON file for my ADK agent based on the eval plan in docs/eval-plan.md", "should_trigger": false},
+  {"query": "run adk eval against tests/integration/fixture and tell me what failed", "should_trigger": false},
+  {"query": "add our agent evals to the Cloud Build pipeline so PRs get blocked on regressions", "should_trigger": false},
+  {"query": "run evals to test my skill and tell me the trigger rate", "should_trigger": false},
+  {"query": "benchmark my skill's description accuracy — it's undertriggering", "should_trigger": false},
+  {"query": "optimize the system prompt for my summarizer with the Vertex prompt optimizer", "should_trigger": false},
+  {"query": "write unit tests for the payments service in src/payments/", "should_trigger": false}
+]

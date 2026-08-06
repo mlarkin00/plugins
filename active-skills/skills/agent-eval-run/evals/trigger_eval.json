@@ -1,0 +1,16 @@
+[
+  {"query": "run the evals for my ADK agent in agents/orders_agent against the evalset and show me what failed", "should_trigger": true},
+  {"query": "add our agent evals to the Cloud Build pipeline so a regression blocks the PR", "should_trigger": true},
+  {"query": "did the new version of the support agent regress against baseline? success rate went from 0.91 to 0.88 on one run", "should_trigger": true},
+  {"query": "the trajectory eval failed for the refund flow — help me figure out which step went wrong", "should_trigger": true},
+  {"query": "set up online evals for the agent we deployed to Agent Engine last week", "should_trigger": true},
+  {"query": "our agent eval scores bounce around between runs — how do I make the CI gate stop flapping", "should_trigger": true},
+  {"query": "gate deployment on the agent eval results — hallucination rate can't rise more than 2 points", "should_trigger": true},
+  {"query": "what metrics should we track for the new scheduling agent?", "should_trigger": false},
+  {"query": "write the evalset JSON for the orders agent cancel flow", "should_trigger": false},
+  {"query": "create a custom LLM judge rubric for response quality", "should_trigger": false},
+  {"query": "run evals to test my skill and report the trigger rate", "should_trigger": false},
+  {"query": "benchmark skill performance with variance analysis for my new skill", "should_trigger": false},
+  {"query": "set up a Cloud Build trigger that builds the container on push to main", "should_trigger": false},
+  {"query": "why is pytest failing on the database migration tests in CI", "should_trigger": false}
+]
