@@ -24,7 +24,7 @@ Focus on changes this session introduced:
 - Follow-up tasks discovered → add to `.agents/TODO.md` (with `[P1]` or `[P2]`)
 - Completed tasks → prune from `.agents/TODO.md`
 - **Durable lessons learned → mint a concept in `.agents/wiki/`, not a TODO item** (see below)
-- UI tokens or component changes → update `DESIGN.md` and run `npx @google/design.md lint`
+- UI tokens or component changes → update `DESIGN.md` and run `npx @google/design.md lint DESIGN.md` (the file argument is required)
 
 If the session made no architectural or convention changes, a brief read-and-confirm that existing docs are still accurate is sufficient — do not update for its own sake.
 

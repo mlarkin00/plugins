@@ -21,7 +21,7 @@ This skill manages the lifecycle of agent-facing documentation:
 - **Progressive Disclosure**: Briefing files point to `DESIGN.md`, which points to `docs/` for detail. Use `@docs/api-style.md`-style pointers (Claude Code and Gemini CLI both support `@file` imports).
 - **Surgical Specificity**: Use exact command strings (e.g., `pnpm test:unit --filter "@shared/*"`) rather than general descriptions.
 - **Standalone Files**: `AGENTS.md`, `GEMINI.md`, and `CLAUDE.md` MUST be standalone, individual regular files — never symlinks (and never symlinked to each other). They are not mirrors of each other: each file contains instructions specific to that agent/environment (e.g., `GEMINI.md` for Gemini CLI/Jetski, `CLAUDE.md` for Claude Code, `AGENTS.md` for general or other coding agents). If any briefing file is already a symlink, de-symlink it before editing: run `scripts/analyze-agent-docs.sh --fix`, which dereferences each link into a standalone file with the same content and removes the link (the link's former target is left untouched). Do this even for whole-repo setups where all three currently point at one file — split them into three independent files.
-- **Design Token Coherence**: `DESIGN.md` MUST reflect the design system currently implemented in the UI. When token values, component specs, or section content diverge from shipped code, update `DESIGN.md` in the same PR or add a `.agents/TODO.md` item to sync. Run `npx @google/design.md lint` after every edit — broken token references (`{category.name}`) are silent bugs.
+- **Design Token Coherence**: `DESIGN.md` MUST reflect the design system currently implemented in the UI. When token values, component specs, or section content diverge from shipped code, update `DESIGN.md` in the same PR or add a `.agents/TODO.md` item to sync. Run `npx @google/design.md lint DESIGN.md` after every edit — broken token references (`{category.name}`) are silent bugs.
 - **Architecture ↔ Code Coherence**: `ARCH.md` MUST reflect current shipped architecture. When implementation diverges, update `ARCH.md` in the same PR or add a `.agents/TODO.md` item to sync.
 - **Memory Discipline**: If the project uses the agentic-minions T0-T4 memory system (see detection rules in `references/memory-discipline.md`), `AGENTS.md` MUST contain a **Memory Discipline** section sourced from that template. The section's mandate that `MEMORY.md` is loaded into every session is non-negotiable and MUST appear verbatim. Note: the user-level agent-memory plugin (`~/.claude/memory/`) is a separate concern — it is auto-managed by hooks and requires no per-project documentation.
 - **Bundle Import**: Whenever `.agents/wiki/` exists, the briefing files MUST `@`-import its root index (`@.agents/wiki/index.md`). This is non-negotiable and is not satisfied by a prose pointer — an import is content the harness loads; prose is a decision the agent must make and was observed not making. A bundle without the import is drift and MUST be fixed on sight.
@@ -98,7 +98,7 @@ The document MUST follow this 5-section hierarchy, plus the conditional **Memory
 
 ### 4. Phase 4: DESIGN.md Management
 
-> **Format spec**: [google/design.md](https://github.com/google-labs-code/design.md) · package `@google/design.md` v0.1.1 · **alpha** — token categories and section list may change.
+> **Format spec**: [google/design.md](https://github.com/google-labs-code/design.md) · package `@google/design.md` v0.4.0 (verified 2026-08-06) · **alpha** — token categories and section list may change. Unpinned `npx @google/design.md` always resolves to latest, so this documentation and the tool can drift; run `npx @google/design.md spec` to get the format spec the installed version actually enforces, and `spec --rulesOnly` for its live lint rules.
 
 `DESIGN.md` lives at the project root and defines the project's **design system**: machine-readable tokens agents can consume, plus human-readable rationale for every design decision. It is distinct from `AGENTS.md` (operational briefing), `ARCH.md` (system architecture), and `docs/designs/` (proposals and history).
 
@@ -112,15 +112,20 @@ The file MUST open with a YAML front matter block (delimited by `---`) containin
 
 **YAML front matter — valid token categories:**
 
-| Category     | Value format                                                                  | Example             |
-| ------------ | ----------------------------------------------------------------------------- | ------------------- |
-| `colors`     | Hex string                                                                    | `"#1A1C1E"`         |
-| `typography` | Object: `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing` | —                   |
-| `spacing`    | Dimension with unit                                                           | `"8px"`, `"1.5rem"` |
-| `rounded`    | Dimension with unit                                                           | `"4px"`             |
-| `components` | Named groups: `backgroundColor`, `textColor`, `padding`, `size`               | —                   |
+| Category      | Value format                                                                                       | Example             |
+| ------------- | -------------------------------------------------------------------------------------------------- | ------------------- |
+| `name`        | String — the design system's name                                                                  | `"Daylight"`        |
+| `description` | String, optional                                                                                   | —                   |
+| `colors`      | Any CSS color: hex, named, `rgb()`, `hsl()`, `oklch()`, `lab()`, `color-mix()`. Hex is recommended | `"#1A1C1E"`         |
+| `typography`  | Object: `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | —          |
+| `spacing`     | Dimension with unit (`px`, `em`, `rem`) or number                                                  | `"8px"`, `"1.5rem"` |
+| `rounded`     | Dimension with unit                                                                                | `"4px"`             |
+| `components`  | Named groups. Valid sub-tokens ONLY: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width` | — |
+| `omitted`     | String list, or `{section, reason}` objects — suppresses `missing-sections` diagnostics            | —                   |
 
 Tokens may reference other tokens using `{category.name}` syntax (e.g., `{colors.primary}`). Broken references are a silent bug — always lint.
+
+Two schema traps the linter catches but agents keep hitting: `color` is **not** a component sub-token (use `textColor`), and a top-level key that looks like a token map but is not in the schema is silently dropped from exports (the `token-like-ignored` rule warns about it).
 
 **Markdown body — canonical section order** (sections may be omitted; ordering is enforced when present):
 
@@ -178,11 +183,29 @@ Concrete examples of correct vs. incorrect token application.
 **CLI tooling (`@google/design.md` — binary: `design.md`)**
 
 ```bash
-npx @google/design.md lint DESIGN.md     # validate structure + broken refs + WCAG contrast
-npx @google/design.md diff HEAD~1 DESIGN.md  # detect token regressions between versions
-npx @google/design.md export --format tailwind DESIGN.md  # emit Tailwind config
-npx @google/design.md spec               # inject format spec into agent context
+npx @google/design.md lint DESIGN.md                 # validate; FILE is REQUIRED
+npx @google/design.md export DESIGN.md --format css-tailwind  # Tailwind v4 @theme
+npx @google/design.md spec                           # inject format spec into agent context
+npx @google/design.md spec --rulesOnly               # the installed version's lint rules
+
+# diff takes two FILE PATHS, not git revisions, and does not read stdin:
+git show HEAD~1:DESIGN.md > /tmp/prev-design.md
+npx @google/design.md diff /tmp/prev-design.md DESIGN.md   # detect token regressions
 ```
+
+`FILE` is a required positional on `lint`, `diff`, and `export` — a bare `npx @google/design.md lint` prints usage and exits 1. Pass `-` to read from stdin (`lint` and `export` only).
+
+**Exit codes**: `0` clean · `1` lint errors or bad arguments · `2` file not found.
+
+**Output is always JSON** from `lint` and `diff`. Their `--help` advertises `--format json|text`, but in v0.4.0 the flag is parsed and then ignored — `--format text` and even `--format=banana` both return JSON with no error. Parse the JSON; do not ask for text and do not treat a bogus `--format` as validated. On `export` the flag is real and required: `css-tailwind` (v4 `@theme`), `json-tailwind` (v3 `theme.extend`, aliased as `tailwind`), `dtcg`, `css-vars`.
+
+**Lint rules** (12 in v0.4.0; `spec --rulesOnly` prints the live set). Errors: `broken-ref`. Warnings: `missing-primary`, `missing-typography`, `contrast-ratio` (WCAG AA 4.5:1 on component `backgroundColor`/`textColor` pairs), `orphaned-tokens`, `section-order`, `unknown-key`, `token-like-ignored`. Info: `token-summary`, `missing-sections`, `omitted-rules`.
+
+> **Known false positive — do not "fix" your tokens to satisfy it.** The color validator accepts `color-mix(in srgb, …)` and rejects all 14 other CSS Color Level 5 interpolation spaces (`oklab`, `oklch`, `lab`, `lch`, `hsl`, `hwb`, `display-p3`, `rec2020`, `xyz*`), despite the tool's own spec listing them as valid. Reproduced on 0.3.0 and 0.4.0. If a rejected value matches what the stylesheet actually ships, the linter is wrong — flattening a `color-mix()` to a hex literal discards the token reference it was derived from and lets the tokens drift silently thereafter. Swapping the interpolation space to `srgb` is not a fix either: it lints clean but is a different color.
+>
+> Consequence: **`lint` cannot gate CI unpinned.** To gate, pin a version and allowlist the known-bad rule/paths.
+>
+> `orphaned-tokens` is also noisy by construction — it assumes tokens are referenced from the `components:` block, so a token set consumed through CSS custom properties trips it for every token. That is a normal architecture, not a defect.
 
 **What belongs in `DESIGN.md`:**
 
@@ -199,11 +222,12 @@ npx @google/design.md spec               # inject format spec into agent context
 **Lifecycle rules:**
 
 - Update `DESIGN.md` in the same PR that changes design tokens or design system decisions.
-- Run `npx @google/design.md lint` after every edit — do not skip.
+- Run `npx @google/design.md lint DESIGN.md` after every edit — do not skip. Read the findings rather than trusting the exit code: a non-zero exit is not proof the file is wrong (see the known false positive above), and a clean exit does not mean the tokens match shipped CSS.
 - If `DESIGN.md` exceeds ~300 lines, extract the deepest section prose to `docs/designs/` and leave a pointer.
 
 [ ] **Create `DESIGN.md`** only if the project has a visual UI and no design system file exists yet.
-[ ] **Lint `DESIGN.md`** (`npx @google/design.md lint`) after every edit.
+[ ] **Lint `DESIGN.md`** (`npx @google/design.md lint DESIGN.md`) after every edit.
+[ ] **Triage each finding** — fix real errors, and record a linter false positive in `.agents/TODO.md` rather than editing correct tokens to silence it.
 [ ] **Cross-check token references** when updating — stale `{category.name}` refs silently break agent reasoning.
 
 ### 5. Phase 5: TODO.md Management
@@ -305,8 +329,10 @@ Full model, concept-doc shape, and anti-patterns: **`references/knowledge-bundle
 | "I'll note the version this was verified against later."                          | An unpinned claim is indistinguishable from a stale one the moment the runtime updates. Runtime facts rotting is the expected failure mode, not a hypothetical. Pin on write.                                                                                                                       |
 | "This finding is small — I'll append it to an existing concept."                  | One concept per fact. Merged facts cannot be individually version-pinned, invalidated, or linked to from a rule.                                                                                                                                                                                    |
 | "The bundle explains the rule, so I'll paste the explanation into AGENTS.md too." | Duplication drifts into contradiction and costs the context the bundle exists to save. Keep the rule terse in `AGENTS.md` and link to the concept.                                                                                                                                                 |
-| "DESIGN.md is close enough — I'll update it next sprint."                            | Stale token values or broken `{category.name}` refs silently corrupt agent reasoning. Update in the same PR or file a TODO, and always run `npx @google/design.md lint`.                                        |
+| "DESIGN.md is close enough — I'll update it next sprint."                            | Stale token values or broken `{category.name}` refs silently corrupt agent reasoning. Update in the same PR or file a TODO, and always run `npx @google/design.md lint DESIGN.md`.                              |
 | "I'll skip lint — it's just a style file."                                           | Broken token cross-references and WCAG contrast failures are silent bugs. Lint is mandatory after every edit.                                                                                                   |
+| "Lint rejects this `color-mix()` value, so I'll flatten it to hex to get a clean run."| The linter is wrong here (it only accepts `in srgb`), and the flattened value discards the token reference the color was derived from — the two tokens then drift apart silently forever. Never edit a correct token to satisfy a linter. Verify against the shipped stylesheet, then record the false positive in `.agents/TODO.md`. |
+| "Lint exits non-zero, so DESIGN.md must be broken."                                  | Exit `1` is also returned for bad arguments, and for known false positives. Read the findings and check each against shipped CSS before changing anything.                                                       |
 | "I'll put architecture diagrams and component maps in DESIGN.md."                    | DESIGN.md is a design system (tokens + rationale), not an architecture snapshot. Architecture belongs in `ARCH.md` or `docs/designs/ARCH.md`.                                                                   |
 | "This project has no UI, but I'll create DESIGN.md anyway."                          | DESIGN.md is only for projects with a visual UI surface. CLI tools, libraries, and infra repos MUST NOT have one.                                                                                               |
 | "T4 isn't live yet; I'll add Memory Discipline later."                               | The mandate is forward-compatible for agentic-minions projects. Apply mandates #1–#3 now against the seed index; #10–#11 activate on rollout. Late addition means agents ship bad habits.                       |
