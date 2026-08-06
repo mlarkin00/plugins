@@ -25,6 +25,11 @@ python3 .agents/scripts/check-manifest-versions.py
 # Regenerate the active-skills README inventory (CI runs this after every sync)
 bash active-skills/scripts/gen-readme.sh
 
+# Prove the active-skills mirror still propagates upstream DELETIONS. It executes
+# the sync workflow's own mirror block against a fixture — run after any edit to
+# sync-active-skills.yml (the sync itself runs it before every mirror)
+python3 .agents/scripts/check-sync-mirror.py
+
 # Verify the AGENTS.md / CLAUDE.md twins agree outside their two deliberately
 # divergent regions — run after ANY convention edit (CI runs it too)
 python3 .agents/scripts/check-briefing-twins.py
@@ -81,7 +86,9 @@ for p in active-skills llm-wiki memory-bank skill-usage; do (cd $p && python3 -m
 
 `sync-active-skills.yml` runs on `repository_dispatch`, a daily 06:17 UTC poll, or manual dispatch. It selects by contract — **a skill is a top-level source directory containing a `SKILL.md`** — so the authoring repo can hold `README.md`/`docs/` without shipping phantom skills (Antigravity installs *every* entry under `skills/` as one). Skips are logged as a `::notice::`.
 
-Two guards are load-bearing, not stylistic. The rsync destination is `active-skills/skills/`, so `--delete` cannot reach the plugin's own files one level up; an earlier whole-directory mirror ran against a restructured source, flattened the skills to the plugin root, deleted the manifests and the plugin's own scripts, and **reported success** (`716fb23`, recovered in `0ca72e7`). And the run aborts on zero skills, which would otherwise empty the plugin and commit it as a success.
+Three guards are load-bearing, not stylistic. The rsync destination is `active-skills/skills/`, so `--delete` cannot reach the plugin's own files one level up; an earlier whole-directory mirror ran against a restructured source, flattened the skills to the plugin root, deleted the manifests and the plugin's own scripts, and **reported success** (`716fb23`, recovered in `0ca72e7`). The run aborts on zero skills, which would otherwise empty the plugin and commit it as a success. And the rsync carries `--delete-excluded`, because rsync exclude rules are two-sided: the anchored `- /*` that filters non-skill entries *also protects* matching destination entries from `--delete`, so a skill deleted upstream kept shipping and the mirror grew into a superset of the source (found 2026-08-06 at 40 skills against 34, every run green). That flag makes the zero-skill abort strictly load-bearing — with the protection gone, a source that reads as empty now wipes the mirror instead of leaving it untouched. Evidence: `@.agents/wiki/testing/rsync-protects-excluded.md`.
+
+**A removal-only upstream change is the sync's blind spot.** Deletions were invisible for weeks because they produce no destination diff — so `Detect changes` saw nothing, no version was bumped, no release was cut, and the run log said `success`. Never read a green sync as proof the mirror matches the source; compare the two directory listings. `check-sync-mirror.py` now proves the semantics against a fixture before every mirror, executing the workflow's own `run:` block rather than asserting on its text.
 
 The vendoring exists because `agy plugin install <clone>` installs every plugin *physically present* — so `active-skills` must be here, not merely referenced. There is no ad-hoc agy install from a repo URL, and `agy plugin import claude` does not work.
 
@@ -107,6 +114,6 @@ Open the concept before re-deriving anything it covers.
 * [antigravity](.agents/wiki/antigravity/index.md) - Contains 9 entries: Which plugin components actually work on Antigravity, Headless permission matching is first-word based, Antigravity hooks contract, agy plugin install is additive — it never deletes files removed from the source, Two install paths, selected by the root plugin.json, agy plugin install component counts are not evidence, $CLAUDE_PLUGIN_ROOT does not exist in Antigravity, PreInvocation is not SessionStart, The agy CLI never starts the sidecar manager.
 * [claude-code](.agents/wiki/claude-code/index.md) - Contains 4 entries: An agent whose frontmatter is not valid YAML is skipped silently, Updating an installed Claude Code plugin, A plugin's SessionEnd hook timeout does not raise the cancellation deadline, Injected context is stored as typed records, not as rendered system-reminder text.
 * [cross-runtime](.agents/wiki/cross-runtime/index.md) - Contains 4 entries: Each runtime reads a different briefing file, and only one expands imports, Hook output protocols differ between runtimes, Hook payload keys differ in case between runtimes, How a skill locates its plugin's scripts.
-* [testing](.agents/wiki/testing/index.md) - Contains 2 entries: ls does not honour argument order, Popping a patched module makes tests hit the network.
+* [testing](.agents/wiki/testing/index.md) - Contains 3 entries: ls does not honour argument order, Popping a patched module makes tests hit the network, rsync --delete does not delete excluded files.
 
 <!-- llm-wiki:discovery .agents/wiki END -->

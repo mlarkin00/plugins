@@ -56,6 +56,19 @@ jobs:
       - name: Record source revision
         run: echo "SOURCE_SHA=$(git -C .source rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      # The mirror's failure mode is silent success — it reported "Synced N
+      # skills" for weeks while never deleting anything. So the step below is
+      # proved against a fixture, on every run, before it is trusted with
+      # --delete-excluded over the real plugin.
+      - name: Verify the mirror semantics
+        run: |
+          # python3 -m pip, not pip: the module must land in the interpreter that
+          # runs the check. PEP 668 marks some system Pythons externally managed.
+          python3 -c "import yaml" 2>/dev/null \
+            || python3 -m pip install --quiet pyyaml \
+            || python3 -m pip install --quiet --break-system-packages pyyaml
+          python3 .agents/scripts/check-sync-mirror.py
+
       - name: Mirror the source skills into the plugin
         run: |
           set -euo pipefail
@@ -96,7 +109,16 @@ jobs:
             echo "::notice::Skipped non-skill entries (no SKILL.md):${skipped}"
           fi
 
-          rsync -a --delete --filter="merge $FILTER" ".source/" "$DEST"
+          # --delete-excluded is load-bearing. rsync exclude rules are TWO-SIDED:
+          # `- /*` keeps non-skill entries out of the mirror AND protects
+          # matching entries in the destination from --delete. A skill deleted
+          # upstream loses its `+ /<name>/` rule, falls under `- /*`, and is
+          # therefore protected — so plain --delete never removed it and the
+          # mirror silently grew into a superset of the source. It is safe to
+          # drop that protection here because the only exclude is the anchored
+          # `- /*` and the destination holds nothing but mirrored skills; the
+          # plugin's own files are one level up, out of rsync's reach entirely.
+          rsync -a --delete --delete-excluded --filter="merge $FILTER" ".source/" "$DEST"
           echo "Synced ${count} skills."
 
       - name: Regenerate the README inventory
