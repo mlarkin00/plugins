@@ -28,6 +28,11 @@ fix landed. Reserved names now live in `okf_lib/paths.RESERVED_FILENAMES`.
 
 (none)
 
+Closed 2026-08-13: the consolidation retired `/llm-wiki:stats`, which
+`managing-agent-instructions` named in two places. Fixed in the authoring repo
+(`mlarkin00/active-skills@e2275c6`) and reaching `active-skills/skills/` here on
+the next sync — the copy here is the rsync mirror and cannot be edited directly.
+
 ## P2 — Nice-to-Have
 
 - [ ] **[P2]** Add a sidecar to run periodic/background bundle maintenance — schedule the passes that currently only happen when a human remembers to type them (`/llm-wiki:lint` for semantic drift, `/llm-wiki:log` for dated entries, plus `okf_index.py` / `okf_validate.py` / `okf_stats.py`). Open questions: timer mechanism (systemd timer vs. cron vs. `SessionStart` hook), whether lint's LLM pass runs unattended or only reports, and how findings surface (write to `log.md`, open a report doc, or notify). Prior art: `local-minions`' `minion-memory-sidecar.timer`.

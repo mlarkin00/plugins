@@ -116,7 +116,7 @@ To add web documentation:
 /llm-wiki:validate   # check §9 conformance
 /llm-wiki:index      # regenerate index.md files, and refresh discovery blocks
 /llm-wiki:lint       # semantic health check
-/llm-wiki:stats      # quick stats (orphans, broken links, citation coverage)
+/llm-wiki:lint --quick  # mechanical stats only (orphans, broken links, citations)
 /llm-wiki:visualize  # generate viz.html graph
 /llm-wiki:log        # append a dated entry to log.md
 ```

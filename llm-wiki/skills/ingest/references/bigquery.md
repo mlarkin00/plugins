@@ -1,11 +1,8 @@
----
-name: ingesting-bigquery
-description: Use when ingesting a BigQuery dataset into an OKF bundle. Covers listing concepts (with shard-family detection), pulling schema/partitioning metadata via okf_bq.py, and routing to the authoring-concepts skill for doc writing.
----
-
 # BigQuery Adapter for OKF Ingest
 
-This skill is the first structured source adapter. It translates a BigQuery dataset into OKF concept docs (one per dataset and one per table/shard-family).
+The first structured source adapter, loaded by `/llm-wiki:ingest <project.dataset>`.
+It translates a BigQuery dataset into OKF concept docs (one per dataset and one
+per table/shard-family).
 
 Requires: `google-cloud-bigquery` pip package + Application Default Credentials.
 
@@ -55,7 +52,7 @@ Note: sampling very large tables (`transactions` in crypto_bitcoin is hundreds o
 
 ## Step 3 — Enrich via authoring-concepts
 
-Author each concept by following `authoring-concepts`, passing the raw metadata below. For many concepts, dispatch per the runtime (see `ingesting-sources` § Per-concept dispatch): parallel subagents on Claude Code, sequential on Antigravity. The metadata shape guides the body:
+Author each concept by following `authoring-concepts`, passing the raw metadata below. For many concepts, dispatch per the runtime (see the parent `SKILL.md` § Per-concept dispatch): parallel subagents on Claude Code, sequential on Antigravity. The metadata shape guides the body:
 
 **For BigQuery Dataset**:
 - `type: BigQuery Dataset`

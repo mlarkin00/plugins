@@ -74,9 +74,9 @@ Four decisions were settled with the owner; everything below follows from them.
 | The "schema" (disciplining doc) | bundle conventions | per-bundle `CLAUDE.md` written by `/llm-wiki:init` + plugin **skills** |
 | Raw sources (immutable) | optional `raw/` | read-only inputs to ingest |
 | The wiki | concept docs + `references/` | **skills** + **subagents** author them |
-| Ingest | new/updated concepts | `/llm-wiki:ingest` → `okf-concept-enricher`, `okf-web-crawler` |
-| Query | answer filed back as a page | `querying-okf` skill |
-| Lint | bundle health | `/llm-wiki:lint` → `okf-linter` + `okf_stats.py` |
+| Ingest | new/updated concepts | `/llm-wiki:ingest` → `authoring-concepts`, `ingest/references/web.md` |
+| Query | answer filed back as a page | `query` skill |
+| Lint | bundle health | `/llm-wiki:lint` → `lint/references/semantic-audit.md` + `okf_stats.py` |
 | `index.md` / `log.md` | reserved files (§6/§7) | `okf_index.py` + `/llm-wiki:log` (manual, per Decision 3) |
 | Conformance (§9) | `type` present, valid frontmatter | **PostToolUse hook** + `okf_validate.py` |
 
@@ -93,14 +93,18 @@ Four decisions were settled with the owner; everything below follows from them.
 llm-wiki/                               # plugin root  ·  marketplace name == dir
 ├── .claude-plugin/plugin.json
 ├── skills/     (also the slash-command surface: /llm-wiki:<name>)
-│   ├── okf-spec/                  N    distilled rules + bundled SPEC.md (ground truth)
+│   ├── init/                      *    scaffold a bundle + install discovery
+│   ├── ingest/                    *    supervised ingest loop + adapter contract + per-concept dispatch
+│   │   └── references/            *    bigquery.md · web.md (crawl + 4 gates) · re-enrich.md
 │   ├── authoring-concepts/        *    write ONE conformant doc (general; catalog sections optional)
-│   ├── ingesting-sources/         *    the supervised ingest loop + adapter contract
-│   ├── ingesting-web/             *    crawl + 4-gate reference test + metric/join/dimension extraction
-│   ├── ingesting-bigquery/        *    first adapter (drives okf_bq.py)
-│   ├── maintaining-okf/           *    lint / health
-│   └── querying-okf/              *    query + file-answer-back
-├── agents/     okf-concept-enricher* · okf-web-crawler* · okf-linter* · okf-source-scout*
+│   │   └── references/okf-spec.md N    distilled OKF v0.1 rules (ground truth)
+│   ├── query/                     *    query + file-answer-back
+│   │   └── references/            *    finding-sources.md (what to ingest for a gap)
+│   ├── lint/                      *    stats + conformance + semantic audit → fix-it report
+│   │   └── references/            *    semantic-audit.md (the deep read)
+│   ├── validate/  index/          N    thin wrappers over okf_validate.py / okf_index.py
+│   └── log/  visualize/           N    log.md append · okf_visualize.py
+├── (no agents/ — see §6.3)
 ├── scripts/
 │   ├── okf_lib/                   V    document.py (model) + paths.py (concept-id logic)
 │   ├── okf_doc.py                 V    doc I/O + write validation + augmentation guard
@@ -127,13 +131,27 @@ Skills carry the workflows that were *system prompts* in the ADK agent, generali
 
 | Skill | Responsibility | Provenance |
 |---|---|---|
-| **okf-spec** | Distilled OKF v0.1 rules + bundled `SPEC.md` as ground truth (required `type`; recommended `title/description/resource/tags/timestamp`; reserved files; cross-link forms; citations; conformance; `okf_version`). Loaded whenever authoring/maintaining. | `SPEC.md` §3–§11 |
+| **authoring-concepts → `references/okf-spec.md`** | Distilled OKF v0.1 rules as ground truth (required `type`; recommended `title/description/resource/tags/timestamp`; reserved files; cross-link forms; citations; conformance; `okf_version`). Read when the question is about the format. | `SPEC.md` §3–§11 |
 | **authoring-concepts** | How to write **one** conformant doc: frontmatter, body order (prose → conventional `# Schema`/`# Examples`/`# Citations`), file-relative cross-links, "don't invent fields/targets", "don't over-link". Data-catalog sections (`# Schema`, `# Common query patterns`) are an **optional domain pattern**, not the default. | `enrichment_instruction.md` (generalized) |
-| **ingesting-sources** | The supervised ingest loop: detect source → adapter lists concepts → review plan → fan out enrichers → review diff → suggest `/llm-wiki:index` + `/llm-wiki:log`. Documents the **adapter contract** (§7). | `runner.py` + Karpathy "Ingest" |
-| **ingesting-web** | Self-driven crawl: seeds → follow authoritative links → **enrich vs. mint reference vs. skip**, the **four-gate reference test**, required extractions (**metrics → `references/metrics/`, joins → `references/joins/`, dimensions**), strict **augmentation rules**. | `web_ingestion_instruction.md` (port near-verbatim) |
-| **ingesting-bigquery** | First adapter: list datasets/tables (detect sharded `_YYYYMMDD` families), pull schema/partitioning/clustering via `okf_bq.py`, sample rows when sparse, one doc per concept. | `bigquery.py` + `source_tools.py` |
-| **maintaining-okf** | Semantic health (Karpathy "Lint"): contradictions, stale claims, orphan pages, concepts mentioned-but-unwritten, missing cross-refs, data gaps → suggested questions/sources. Pairs with `okf_stats.py` for the mechanical findings. | Karpathy "Lint" |
-| **querying-okf** | Read `index.md` first → drill in → synthesize **with citations** → offer to **file the answer back** as a new concept so explorations compound. | Karpathy "Query" |
+| **ingest** | The supervised ingest loop: detect source → adapter lists concepts → review plan → fan out enrichers → review diff → suggest `/llm-wiki:index` + `/llm-wiki:log`. Documents the **adapter contract** (§7). | `runner.py` + Karpathy "Ingest" |
+| **ingest → `references/web.md`** | Self-driven crawl: seeds → follow authoritative links → **enrich vs. mint reference vs. skip**, the **four-gate reference test**, required extractions (**metrics → `references/metrics/`, joins → `references/joins/`, dimensions**), strict **augmentation rules**. | `web_ingestion_instruction.md` (port near-verbatim) |
+| **ingest → `references/bigquery.md`** | First adapter: list datasets/tables (detect sharded `_YYYYMMDD` families), pull schema/partitioning/clustering via `okf_bq.py`, sample rows when sparse, one doc per concept. | `bigquery.py` + `source_tools.py` |
+| **lint → `references/semantic-audit.md`** | Semantic health (Karpathy "Lint"): contradictions, stale claims, orphan pages, concepts mentioned-but-unwritten, missing cross-refs, data gaps → suggested questions/sources. Pairs with `okf_stats.py` for the mechanical findings. | Karpathy "Lint" |
+| **query** | Read `index.md` first → drill in → synthesize **with citations** → offer to **file the answer back** as a new concept so explorations compound. | Karpathy "Query" |
+
+> **2026-08-13 — consolidated 18 skills → 9.** The knowledge layer above and the
+> command surface in §6.2 had grown as two parallel sets of skills describing the
+> same operations: `ingest`/`ingesting-sources`, `query`/`querying-okf`,
+> `lint`/`maintaining-okf`, plus `stats` and `validate` (steps 1–2 of `lint`) and
+> `enrich` (the ingest loop minus the adapter). Every skill description loads in
+> every session, so the duplication cost context on every turn while giving the
+> model two competing places to look. The rule now is **one skill per user-facing
+> operation**; source-specific and deep-detail material is a `references/` file
+> under the skill that owns it, loaded only when that path is taken. `agy plugin
+> install` copies `references/` intact (verified 2026-08-13), so the shape works
+> on both runtimes. Retired: `okf-spec`, `ingesting-sources`, `ingesting-web`,
+> `ingesting-bigquery`, `maintaining-okf`, `querying-okf`, `finding-sources`,
+> `enrich`, `stats`.
 
 ### 6.2 Commands (the verb surface)
 
@@ -143,13 +161,12 @@ Thin entry points (mostly "activate skill X / dispatch agent Y with these args")
 |---|---|
 | `/llm-wiki:init [dir]` | Scaffold a bundle: root `index.md` with `okf_version: "0.1"` frontmatter, per-bundle `CLAUDE.md` (the schema layer), `.gitignore`, optional `raw/`. |
 | `/llm-wiki:ingest <source…> [--auto]` | Detect source → pick adapter → **supervised** enrich (Decision 4). `--auto` fans out unattended. |
-| `/llm-wiki:enrich [concept…]` | (Re)enrich named concepts or all; one `okf-concept-enricher` per concept, in parallel. |
+| `/llm-wiki:ingest --re-enrich [concept…]` | (Re)enrich named concepts or all, from each concept's recorded `resource`; per-concept dispatch as above. |
 | `/llm-wiki:index` | Regenerate every `index.md` (`okf_index.py`); model may refine directory descriptions. |
-| `/llm-wiki:lint` | `okf-linter` + `okf_validate.py` + `okf_stats.py` → fix-it report. |
+| `/llm-wiki:lint [--quick]` | `okf_stats.py` + `okf_validate.py` + the semantic audit → fix-it report. `--quick` is mechanical stats only. |
 | `/llm-wiki:query <q>` | Cited answer from the bundle; offer to file it back. |
 | `/llm-wiki:validate` | §9 conformance over the whole bundle (`okf_validate.py`); non-zero exit on violation. |
 | `/llm-wiki:visualize [--out --name]` | Self-contained `viz.html` (`okf_visualize.py`). |
-| `/llm-wiki:stats` | Concepts by type, link/orphan/broken-link/citation coverage. |
 | `/llm-wiki:log <entry>` | Append a dated `log.md` entry (manual, per Decision 3). |
 
 ### 6.3 Agents (isolated-context workers) — RETIRED, converted to skills in 0.1.7
@@ -163,14 +180,13 @@ Thin entry points (mostly "activate skill X / dispatch agent Y with these args")
 > | Former agent | Now |
 > |---|---|
 > | `okf-concept-enricher` | the `authoring-concepts` skill, one doc per concept |
-> | `okf-web-crawler` | the `ingesting-web` skill (it already held the crawl procedure) |
-> | `okf-linter` | the audit procedure in the `maintaining-okf` skill |
-> | `okf-source-scout` | the new `finding-sources` skill (it had no caller) |
+> | `okf-web-crawler` | `ingest/references/web.md` (it already held the crawl procedure) |
+> | `okf-linter` | `lint/references/semantic-audit.md` |
+> | `okf-source-scout` | `query/references/finding-sources.md` (it had no caller) |
 >
 > The isolated-context *parallelism* the agents provided is now a dispatch choice
 > inside those skills: on Claude Code, fan out one `general-purpose` subagent per
-> unit; on Antigravity, run sequentially. See `ingesting-sources` § Per-concept
-> dispatch. The original design rationale is kept below for history.
+> unit; on Antigravity, run sequentially. See `ingest` § Per-concept dispatch. The original design rationale is kept below for history.
 
 Used where work is **parallelizable** (per-concept fan-out over a 30-table dataset would blow main context) or **long/deep** (a web crawl, a full audit).
 
@@ -252,7 +268,7 @@ Discovery is the step that decides whether any of the rest matters. A prose poin
 
 ### 8.3 Web ingest
 
-`ingesting-web` + `okf-web-crawler`: seeds → `okf_fetch.py` (budget-capped) → per page, **enrich** existing docs or **mint** `references/…` per the four-gate test; metrics/joins land in `references/metrics/` and `references/joins/`; augmentation rules preserve existing structure.
+`ingest/references/web.md` + `okf-web-crawler`: seeds → `okf_fetch.py` (budget-capped) → per page, **enrich** existing docs or **mint** `references/…` per the four-gate test; metrics/joins land in `references/metrics/` and `references/joins/`; augmentation rules preserve existing structure.
 
 ### 8.4 Index / validate / visualize
 
@@ -271,7 +287,7 @@ Discovery is the step that decides whether any of the rest matters. A prose poin
 ## 9. Conformance & the augmentation guard
 
 - **Conformance (§9)** is enforced two ways: `okf_doc.py write` validates required frontmatter before writing, and the **PostToolUse hook** re-runs `okf_validate.py --file` on *any* markdown write (including hand edits), blocking non-conformant docs. `/llm-wiki:validate` checks the whole bundle on demand.
-- **Augmentation guard** (from the web pass) lives in both layers: `okf_doc.py` deterministically refuses a write that shrinks an existing table's `# Schema` field set or drops `# Citations` (hard guard), and `ingesting-web` carries the augmentation rules as instructions (soft guard) — preserve every `#` heading, merge tags, keep `resource` verbatim, put the web URL in `# Citations` not `resource`.
+- **Augmentation guard** (from the web pass) lives in both layers: `okf_doc.py` deterministically refuses a write that shrinks an existing table's `# Schema` field set or drops `# Citations` (hard guard), and `ingest/references/web.md` carries the augmentation rules as instructions (soft guard) — preserve every `#` heading, merge tags, keep `resource` verbatim, put the web URL in `# Citations` not `resource`.
 
 ---
 

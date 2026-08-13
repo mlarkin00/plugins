@@ -9,7 +9,7 @@ Claude becomes the disciplined author and maintainer of a persistent, interlinke
 - **Init** a bundle with conventions, a per-bundle `CLAUDE.md` that disciplines future authoring, and **discovery** wired into the host repo's briefing files so the bundle is actually read
 - **Discover** — the root catalog reaches every session unconditionally: a `@bundle/index.md` import in `CLAUDE.md`, or the catalog inlined into `AGENTS.md`/`GEMINI.md` for Antigravity, which loads those but does not expand imports
 - **Ingest** from BigQuery datasets, web pages, or local files
-- **Enrich** concept docs with prose, schema summaries, query patterns, and cross-links
+- **Enrich** concept docs with prose, schema summaries, query patterns, and cross-links (`/llm-wiki:ingest --re-enrich`)
 - **Validate** OKF §9 conformance on every write (PostToolUse hook)
 - **Index** auto-generated `index.md` files, bottom-up
 - **Visualize** as a self-contained Cytoscape.js HTML graph
@@ -23,13 +23,13 @@ Claude becomes the disciplined author and maintainer of a persistent, interlinke
 |---|---|
 | `/llm-wiki:init [dir]` | Scaffold a new bundle |
 | `/llm-wiki:ingest <source>` | Supervised ingest from any source |
-| `/llm-wiki:enrich [concept…]` | Re-enrich named (or all) concepts |
+| `/llm-wiki:ingest --re-enrich [concept…]` | Re-enrich named (or all) concepts from their recorded source |
 | `/llm-wiki:validate [dir]` | Full §9 conformance check |
 | `/llm-wiki:index [dir]` | Regenerate all `index.md` files and refresh discovery blocks |
 | `/llm-wiki:visualize [dir]` | Generate `viz.html` graph |
 | `/llm-wiki:lint [dir]` | Semantic health check |
 | `/llm-wiki:query <q>` | Cited answer from the bundle |
-| `/llm-wiki:stats [dir]` | Quick mechanical stats |
+| `/llm-wiki:lint --quick [dir]` | Mechanical stats only, no semantic audit |
 | `/llm-wiki:log <entry>` | Append to `log.md` |
 
 ## Install
@@ -68,10 +68,18 @@ pip install google-genai                    # optional: LLM index descriptions
 ## Architecture
 
 - **Scripts** (deterministic): `okf_doc.py`, `okf_validate.py`, `okf_index.py`, `okf_discover.py`, `okf_visualize.py`, `okf_fetch.py`, `okf_bq.py`, `okf_search.py`, `okf_stats.py`
-- **Skills** (judgment): `okf-spec`, `authoring-concepts`, `ingesting-sources`, `ingesting-web`, `ingesting-bigquery`, `maintaining-okf`, `finding-sources`, `querying-okf`, plus the `/llm-wiki:*` command skills
+- **Skills** (judgment): one per user-facing operation — `init`, `ingest`, `query`, `lint`, `validate`, `index`, `log`, `visualize` — plus `authoring-concepts`, the shared routine for writing one conformant doc. Source-specific and deep-detail material lives in each skill's `references/`, loaded only when that path is taken:
+
+  ```
+  ingest/references/{bigquery,web,re-enrich}.md
+  query/references/finding-sources.md
+  lint/references/semantic-audit.md
+  authoring-concepts/references/okf-spec.md
+  ```
+
 - **Hook**: PostToolUse validates every `.md` write for OKF §9 conformance
 
-There are no agents. The former per-concept enricher, web crawler, linter, and source scout are the `authoring-concepts`, `ingesting-web`, `maintaining-okf`, and `finding-sources` skills — Antigravity installs plugin agents but cannot invoke them, so work that must run on both runtimes is a skill. Parallel fan-out (many concepts at once) is a dispatch choice inside those skills: parallel `general-purpose` subagents on Claude Code, sequential on Antigravity.
+There are no agents. The former per-concept enricher, web crawler, linter, and source scout are `authoring-concepts`, `ingest/references/web.md`, `lint/references/semantic-audit.md`, and `query/references/finding-sources.md` — Antigravity installs plugin agents but cannot invoke them, so work that must run on both runtimes is a skill. Parallel fan-out (many concepts at once) is a dispatch choice inside `ingest`: parallel `general-purpose` subagents on Claude Code, sequential on Antigravity.
 
 ## Provenance
 

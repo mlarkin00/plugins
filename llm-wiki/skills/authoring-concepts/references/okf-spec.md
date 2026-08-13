@@ -1,11 +1,12 @@
----
-name: okf-spec
-description: Load when working with OKF bundles — authoring, editing, ingesting, validating, or maintaining Open Knowledge Format markdown documents. Provides the OKF v0.1 rules every authoring skill depends on.
----
-
 # OKF v0.1 Spec — Distilled Rules
 
 Source of truth: `GoogleCloudPlatform/knowledge-catalog/okf/SPEC.md`
+
+The full format rules behind every llm-wiki operation. `authoring-concepts`
+covers the authoring workflow; this file is the spec it conforms to. Read it when
+a question is about the *format* — what a conformant doc must contain, what a
+concept ID may look like, which files are reserved, how links and citations are
+written.
 
 ## What a bundle is
 
