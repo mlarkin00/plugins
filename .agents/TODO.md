@@ -11,18 +11,11 @@ Durable runtime behaviour learned that day lives in the OKF bundle at
 
 ## P0 — Address Immediately
 
-- [ ] **[P0]** Decide how `consolidate-skills` lands on `main` (session 2026-08-13).
-  The branch is committed and pushed to `origin/consolidate-skills`, but **not
-  merged** — it consolidates `llm-wiki` from 18 skills to 9, which removes nine
-  skill directories and retires two slash commands (`/llm-wiki:enrich` →
-  `/llm-wiki:ingest --re-enrich`, `/llm-wiki:stats` → `/llm-wiki:lint --quick`).
-  Removing skills and renaming commands is a breaking change by the close-session
-  criteria, and merging to `main` immediately cuts llm-wiki 0.1.8 via
-  `release.yml`, invalidating every version-keyed cache. Downstream is already
-  clear: the only external caller, `managing-agent-instructions`, was repointed in
-  `mlarkin00/active-skills@e2275c6` and syncs in on its own. So this is a
-  release-timing call, not blocked work — `git merge --no-ff consolidate-skills`
-  and push, or open a PR, when 0.1.8 should ship.
+(none — the `consolidate-skills` hold was lifted by Matt on 2026-08-13 and merged
+to `main`, cutting llm-wiki 0.1.8. It retired `/llm-wiki:enrich` in favour of
+`/llm-wiki:ingest --re-enrich` and `/llm-wiki:stats` in favour of
+`/llm-wiki:lint --quick`; the convention it established is in `llm-wiki/AGENTS.md`
+and its evidence in `.agents/wiki/antigravity/skill-support-files.md`.)
 
 ## P1 — Important / Unblocking
 
