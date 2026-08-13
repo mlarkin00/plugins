@@ -28,10 +28,10 @@ fix landed. Reserved names now live in `okf_lib/paths.RESERVED_FILENAMES`.
 
 (none)
 
-The 2026-08-13 consolidation retired `/llm-wiki:stats`, which
-`managing-agent-instructions` still names. That fix belongs to the authoring repo
-(`mlarkin00/active-skills`, `.agents/TODO.md` P1) — the copy here under
-`active-skills/skills/` is the rsync mirror and is overwritten on every sync.
+Closed 2026-08-13: the consolidation retired `/llm-wiki:stats`, which
+`managing-agent-instructions` named in two places. Fixed in the authoring repo
+(`mlarkin00/active-skills@e2275c6`) and reaching `active-skills/skills/` here on
+the next sync — the copy here is the rsync mirror and cannot be edited directly.
 
 ## P2 — Nice-to-Have
 
