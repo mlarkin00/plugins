@@ -1,11 +1,14 @@
 ---
 name: authoring-concepts
-description: Use when writing or rewriting a single OKF concept document — a markdown file with YAML frontmatter and a structured body. Covers frontmatter conventions, body structure, cross-linking, citation format, and what NOT to invent.
+description: Use when writing or rewriting a single OKF concept document, or when you need the OKF v0.1 format rules — frontmatter conventions, concept IDs, reserved files, body structure, cross-linking, citation format, and what NOT to invent. The shared authoring routine that ingest, query, and lint all call.
 ---
 
 # Authoring OKF Concept Docs
 
-You are writing **one** conformant OKF document. Read `okf-spec` for the full spec; this skill covers the authoring workflow and body conventions.
+You are writing **one** conformant OKF document. This skill is the authoring
+workflow and body conventions; the format rules it conforms to are in
+**`references/okf-spec.md`** — read that when the question is about the format
+itself (concept IDs, reserved files, conformance §9, the frontmatter contract).
 
 ## Workflow
 

@@ -70,5 +70,5 @@ python3 llm-wiki/scripts/okf_discover.py .agents/wiki --check  # exit 1 if stale
 /llm-wiki:validate   # §9 conformance
 /llm-wiki:index      # regenerate index.md after adding or renaming docs
 /llm-wiki:lint       # semantic health — contradictions and stale claims
-/llm-wiki:stats      # orphans, broken links, citation coverage
+/llm-wiki:lint --quick  # mechanical only: orphans, broken links, citation coverage
 ```

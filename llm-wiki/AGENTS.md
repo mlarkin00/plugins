@@ -57,14 +57,31 @@ python3 -m unittest discover -s tests -q
 | `skills/` | Judgment: ingest routing, enrichment authoring, semantic lint, query synthesis, the crawl and the source scout | Claude |
 | `hooks/` | PostToolUse: validates every `.md` write for OKF §9 | Shell + Python |
 
+**One skill per user-facing operation; everything else is `references/`.** The
+nine skills are `init`, `ingest`, `query`, `lint`, `validate`, `index`, `log`,
+`visualize`, and `authoring-concepts` (the shared write-one-doc routine that the
+other three judgment skills call). Source-specific and deep-detail material lives
+under the owning skill's `references/` and is read only when that path is taken —
+`ingest/references/{bigquery,web,re-enrich}.md`, `query/references/finding-sources.md`,
+`lint/references/semantic-audit.md`, `authoring-concepts/references/okf-spec.md`.
+Consolidated 2026-08-13 from 18 skills, which had grown a command skill and a
+near-duplicate knowledge skill for the same operation (`ingest`/`ingesting-sources`,
+`query`/`querying-okf`, `lint`/`maintaining-okf`) plus subsets of skills that
+already ran them (`stats` and `validate` are steps 1–2 of `lint`). Every
+description is loaded in every session, so a second skill is the most expensive
+way to store a paragraph. **Adding a source adapter means a new
+`ingest/references/<x>.md` and a row in its routing table — never a new skill.**
+`agy plugin install` copies `references/` intact (verified 2026-08-13).
+
 **No `agents/`.** The former enricher, crawler, linter, and source-scout agents
-are skills now (`authoring-concepts`, `ingesting-web`, `maintaining-okf`,
-`finding-sources`), because Antigravity installs plugin agents but cannot invoke
-them — anything a plugin must *do* on both runtimes has to be a skill or a hook.
-The "autonomous loop" the agents provided was parallel fan-out; that is now a
-dispatch choice inside the skills (parallel `general-purpose` subagents on Claude
-Code, sequential on Antigravity), not a component type. One procedure per task,
-so the two runtimes cannot drift. See `ingesting-sources` § Per-concept dispatch.
+are the `authoring-concepts` skill and the `web.md` / `semantic-audit.md` /
+`finding-sources.md` references, because Antigravity installs plugin agents but
+cannot invoke them — anything a plugin must *do* on both runtimes has to be a
+skill or a hook. The "autonomous loop" the agents provided was parallel fan-out;
+that is now a dispatch choice inside the skills (parallel `general-purpose`
+subagents on Claude Code, sequential on Antigravity), not a component type. One
+procedure per task, so the two runtimes cannot drift. See `ingest` § Per-concept
+dispatch.
 
 **Discovery is a first-class feature, not documentation.** A bundle reaches a session only through the host repo's briefing file, and the two runtimes disagree about which file and whether `@` imports expand (verified 2026-07-22 with a codeword fixture: Claude Code 2.1.218 loads `CLAUDE.md` and expands imports but does **not** read `AGENTS.md`; `agy` 1.1.5 loads `AGENTS.md`/`GEMINI.md` but does **not** expand imports; a backticked `` `@path` `` is inert on both). `okf_discover.py` picks the mechanism per file and owns the region between its `<!-- llm-wiki:discovery … -->` markers. The inlined form is a copy, so `/llm-wiki:index` re-runs it with `--sync`. Never replace it with a prose pointer — that is the mechanism this feature exists because it failed.
 **No `commands/` directory.** Claude Code surfaces commands as skills, so a `commands/<n>.md` beside a `skills/<n>/SKILL.md` collided on the name and the command won — the skill body, which holds the actual instructions, never loaded. Each skill carries its own `/llm-wiki:<n>` invocation; do not reintroduce wrappers.

@@ -26,7 +26,16 @@ fix landed. Reserved names now live in `okf_lib/paths.RESERVED_FILENAMES`.
 
 ## P1 — Important / Unblocking
 
-(none)
+- [ ] **[P1]** Repoint `/llm-wiki:stats` upstream in `mlarkin00/active-skills`.
+      The 2026-08-13 consolidation retired that command; it is now
+      `/llm-wiki:lint --quick`. Two files still name it —
+      `skills/managing-agent-instructions/SKILL.md` (~L304) and
+      `skills/managing-agent-instructions/references/knowledge-bundle.md` (~L186).
+      They cannot be fixed here: `active-skills/skills/` is the rsync mirror and
+      is overwritten on every sync. Until the upstream PR lands and syncs, an
+      agent following `managing-agent-instructions` will type a command that no
+      longer exists. `/llm-wiki:validate`, `:index`, `:init` and `:lint` are also
+      referenced there and all still resolve.
 
 ## P2 — Nice-to-Have
 

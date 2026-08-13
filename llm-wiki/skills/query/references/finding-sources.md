@@ -1,14 +1,13 @@
----
-name: finding-sources
-description: Use when a concept in an OKF bundle is thin or missing and you need authoritative sources to enrich it — "where can I get data on X", "find a source for this metric", "what should I ingest to fill this gap". Recommends URLs or datasets suitable for /llm-wiki:ingest.
----
-
 # Finding Sources for a Knowledge Gap
 
 Given a topic or a thin concept, find authoritative sources worth ingesting.
-This was the `okf-source-scout` agent until llm-wiki 0.1.7; it is a skill now
-because Antigravity installs plugin agents but cannot invoke them, and this had
-no caller to fan it out anyway — it is always run directly on request.
+Read this when the bundle cannot answer a query, when `/llm-wiki:lint` reports a
+data gap, or on a direct request — "where can I get data on X", "find a source
+for this metric", "what should I ingest to fill this gap".
+
+This was the `okf-source-scout` agent until llm-wiki 0.1.7, then a standalone
+skill; it is reference material now because it has no caller that fans it out —
+it is always run directly, in the session that found the gap.
 
 ## Inputs
 
@@ -28,7 +27,7 @@ no caller to fan it out anyway — it is always run directly on request.
 3. **Find authoritative sources.** Prefer, in order:
    - Official vendor documentation (e.g. Google Cloud Docs for BigQuery topics).
    - Schema / reference pages, not tutorials or overviews — the four-gate test
-     in `ingesting-web` will reject overview pages anyway.
+     in `ingest/references/web.md` will reject overview pages anyway.
    - Public datasets that relate to existing sources. For BigQuery, prefer
      `bigquery-public-data` datasets — free to query (caller pays for bytes).
    Use WebSearch when you need to locate a page, and verify it looks like

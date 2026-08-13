@@ -1,13 +1,13 @@
----
-name: maintaining-okf
-description: Use when performing semantic health checks on an OKF bundle — finding contradictions, stale claims, orphan pages, missing cross-references, and concepts mentioned but not yet written. Pairs with okf_stats.py for mechanical findings.
----
+# The Semantic Audit
 
-# Maintaining an OKF Bundle (Lint / Health)
+Step 3 of `/llm-wiki:lint`: the LLM reads the wiki and identifies health issues
+that mechanical tools can't catch. `okf_stats.py` (step 1) already covers the
+mechanical findings — orphans, broken links, citation coverage — so this pass is
+purely about judgment.
 
-This skill implements Karpathy's "Lint" operation: the LLM reads the wiki and identifies semantic health issues that mechanical tools can't catch.
-
-Pair with `okf_stats.py` for mechanical stats (orphans, broken links, citation coverage). This skill is the deep semantic audit itself — the procedure below reads the bundle and produces the findings. It replaces the retired `okf-linter` agent; run it inline, or on Claude Code dispatch it into a `general-purpose` subagent for an isolated read of a large bundle. On Antigravity, run it inline (there are no dispatchable subagents).
+It replaces the retired `okf-linter` agent; run it inline, or on Claude Code
+dispatch it into a `general-purpose` subagent for an isolated read of a large
+bundle. On Antigravity, run it inline (there are no dispatchable subagents).
 
 ## What to look for
 
@@ -56,19 +56,10 @@ used to do):
 }
 ```
 
-## Workflow
+## Per-finding output shape
 
-```
-/llm-wiki:lint
-  1. okf_stats.py → mechanical findings (orphans, broken links, citation coverage)
-  2. Run the audit procedure above → deep semantic findings for the whole bundle
-  3. Synthesize a prioritized fix-it report (Critical / Moderate / Minor)
-  4. Offer to fix specific items inline, or save the report to a concept doc
-```
+When reporting findings back to the caller, each one is:
 
-## Fix-it report format
-
-For each finding:
 ```
 [SEVERITY] <short title>
   File: <concept_id>
@@ -76,14 +67,5 @@ For each finding:
   Suggested fix: <concrete action>
 ```
 
-SEVERITY levels:
-- **Critical**: conformance violation, broken link to a referenced concept, direct contradiction
-- **Moderate**: stale claim, missing cross-ref for a high-traffic concept, orphan with inbound mentions elsewhere
-- **Minor**: thin description, missing citation, stylistic inconsistency
-
-## After linting
-
-After applying fixes:
-1. Re-run `/llm-wiki:validate` to confirm conformance.
-2. Run `/llm-wiki:index` to regenerate indexes.
-3. Use `/llm-wiki:log` to record the lint pass: `Fixed N findings (M critical, L minor). Ran on <date>.`
+Return the findings; the parent `SKILL.md` owns the severity definitions, the
+combined report format, and the follow-up commands.
