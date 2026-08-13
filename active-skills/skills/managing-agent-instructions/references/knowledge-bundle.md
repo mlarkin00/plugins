@@ -183,7 +183,7 @@ Rules:
 | A fact passes the scope test | Mint a concept — do not append to an existing one unless it is the same fact |
 | After adding/renaming/deleting a doc | Regenerate the index (`/llm-wiki:index`, or `okf_index.py`) — this also re-syncs any inlined catalog, which is a copy and goes stale otherwise |
 | After any edit | `/llm-wiki:validate` — §9 conformance, exit non-zero = violation |
-| Periodically, and after a dependency upgrade | `/llm-wiki:lint` — contradictions and stale claims; `/llm-wiki:stats` — orphans, broken links, citation coverage |
+| Periodically, and after a dependency upgrade | `/llm-wiki:lint` — contradictions and stale claims; `/llm-wiki:lint --quick` — mechanical only: orphans, broken links, citation coverage |
 | A rule in `AGENTS.md` gains evidence | Link the rule to its concept; keep the rule terse |
 
 Where the bundle lives inside a repo that ships `llm-wiki`, its `PostToolUse`

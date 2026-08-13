@@ -301,7 +301,7 @@ Full model, concept-doc shape, and anti-patterns: **`references/knowledge-bundle
 /llm-wiki:index      # regenerate index.md AND re-sync inlined catalogs — after every add, rename, or delete
 /llm-wiki:validate   # §9 conformance — after every edit
 /llm-wiki:lint       # contradictions and stale claims — periodically, and after dependency upgrades
-/llm-wiki:stats      # orphans, broken links, citation coverage
+/llm-wiki:lint --quick  # mechanical only: orphans, broken links, citation coverage
 ```
 
 [ ] **Scaffold the bundle** if the project has runtime findings worth keeping and none exists (`/llm-wiki:init .agents/wiki`, or by hand). `init` installs discovery too.
