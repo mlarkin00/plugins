@@ -13,7 +13,7 @@ Established by live `agy -p` sessions, not by installer output.
 
 | Component | Claude Code | Antigravity |
 |---|---|---|
-| `skills/` | yes | yes |
+| `skills/` | yes | yes — [support files included](skill-support-files.md) |
 | hooks | yes | yes — root `hooks.json` only ([contract](hooks-contract.md)) |
 | `commands/` | yes (surfaced as skills) | only on the claude-format [install path](install-paths.md) |
 | `agents/` | yes | **no** — installed, counted, unreachable |

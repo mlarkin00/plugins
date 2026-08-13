@@ -71,7 +71,8 @@ already ran them (`stats` and `validate` are steps 1–2 of `lint`). Every
 description is loaded in every session, so a second skill is the most expensive
 way to store a paragraph. **Adding a source adapter means a new
 `ingest/references/<x>.md` and a row in its routing table — never a new skill.**
-`agy plugin install` copies `references/` intact (verified 2026-08-13).
+`agy plugin install` copies `references/` intact — evidence:
+`.agents/wiki/antigravity/skill-support-files.md`.
 
 **No `agents/`.** The former enricher, crawler, linter, and source-scout agents
 are the `authoring-concepts` skill and the `web.md` / `semantic-audit.md` /
