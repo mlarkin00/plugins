@@ -23,11 +23,24 @@ git status -sb         # branch, upstream, ahead/behind, and working tree in one
 git diff --stat HEAD   # what this session touched
 ```
 
+### The diff is only half the change surface
+
+**Then write down what this session changed OUTSIDE the working tree**, before routing. Cloud resources created, deleted or reconfigured; a server flag or unit file edited over SSH; a deploy, a scaled replica, an IAM grant, a schema or bucket setting; a model or endpoint swapped. Each is a change the repo may *describe* and `git diff` cannot see.
+
+For every such change, grep the repo for the thing you changed — the resource name, and **both the old and the new value**:
+
+```bash
+grep -rn "<resource-or-old-value>" --include="*.md" --include="*.py" --include="*.yaml" .
+```
+
+This costs one grep per mutation and is the only step that catches the largest class of doc staleness: **prose that was true until you changed the world.** A session that edits no files can still invalidate `ARCH.md`, a runbook, a vendored config capture, a lifecycle rule, or an alert filter — and every diff-scoped review will pass it. If a value now lives in the repo AND somewhere you just changed, that is a duplicate: fix the doc now, and note whether a test could have linked them.
+
 Route on the result:
 
 | Triage result | Route |
 | --- | --- |
-| Clean tree, in sync with upstream | Confirm docs are current (Step 2, read-and-confirm mode) → report clean state and stop |
+| Clean tree, in sync, **and no out-of-repo changes** | Report clean state and stop |
+| Clean tree, but the session changed something outside the repo | Continue to Step 2, carrying the grep hits — this is a documentation session even though nothing was edited |
 | Clean tree, commits ahead of upstream | Skip to Step 3 — classify the unpushed commits, then merge and push |
 | Behind upstream | Reconcile before anything else: `git pull --rebase`. If it conflicts, hand off to `git-sync` and stop |
 | Dirty tree | Continue to Step 2, carrying the file list from `git diff --stat` |
@@ -39,7 +52,16 @@ Triage costs one round trip and decides whether the rest of the skill runs at al
 Scope the pass to what Step 1 showed changed:
 
 - **Code, config, schemas, scripts, or new conventions touched** → invoke the `managing-agent-instructions` skill.
-- **Docs-only changes, or a clean tree** → read the briefing files and confirm they are still accurate. Do not invoke `managing-agent-instructions`; there is nothing for it to reconcile, and it is a multi-phase pass that costs far more than the read.
+- **Out-of-repo changes with grep hits** → invoke it too. The tree may be clean; the docs are not.
+- **Docs-only changes, or a clean tree** → check the briefing files. Do not invoke `managing-agent-instructions`; there is nothing for it to reconcile, and it is a multi-phase pass that costs far more than the check.
+
+**"Confirming docs are accurate" is not reading them.** A stale claim was true when written and still reads as plausible — that is what makes it stale rather than wrong. You cannot detect one by re-reading, only by re-deriving the fact, and nobody re-derives a whole `ARCH.md` per session. So a read-and-judge pass reliably degrades into a plausibility check, and stale-but-plausible is precisely what survives it.
+
+Report the check as what it actually was:
+
+- For each claim you **verified**, name the claim and the command that verified it (`gcloud … returned X`, `GET /v1/models reports Y`, `test_… pins it`).
+- Everything else is **unverified**, not current. Say so. "Docs reviewed and accurate" with nothing behind it is the sentence that lets a wrong number survive another six weeks.
+- Prioritise claims that name a **number, id, path, endpoint, or resource** — those rot. Prose describing a mechanism usually does not.
 
 When it does run, focus on changes this session introduced:
 
@@ -193,8 +215,9 @@ If the user explicitly says "push anyway", "force push", or similar — merge th
 | "No secrets in this diff, it's just docs"                    | Prose leaks too — an unreleased service name in a research doc reads like an ordinary product name and no path scan catches it. Read the prose. |
 | "I removed the secret, so it's safe to push"                 | If it was already committed locally, the secret is in the history. Amend or rewrite before pushing.   |
 | "I'll push the docs update even if the code is breaking"     | All staged changes travel in the same push. Hold everything or push everything.                       |
-| "Nothing to commit, nothing to do"                           | If the session established new conventions, docs need updating even without code changes — that is why Step 2 still runs in read-and-confirm mode on a clean tree. |
-| "I already know what the docs say"                           | The session may have shifted implicit conventions. Read before declaring docs current.                |
+| "Nothing to commit, nothing to do"                           | A session that edited no files can still have invalidated the docs by changing the world — restarting a server, deleting a resource, swapping a model. Enumerate out-of-repo changes in Step 1 and grep for each. |
+| "I already know what the docs say"                           | Knowing what they say is the problem, not the remedy — a stale claim reads exactly like a current one. Verify the claim against the system, or report it as unverified. |
+| "I read the docs and they look fine"                         | "Looks fine" is a plausibility check, and stale-but-plausible is what survives plausibility checks. Name the claim and the command that verified it, or it is unverified. |
 | "The task is done, so I'll just delete it from TODO.md"      | A completed item's resolution note is often the only record of *why*. Mint the concept in `.agents/wiki/` first, then prune. |
 | "I'll write the lesson as a TODO so it's not lost"           | TODOs are work to do; a closed finding sits there forever looking actionable. Lessons are evidence — they belong in the bundle. |
 
