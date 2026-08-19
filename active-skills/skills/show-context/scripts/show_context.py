@@ -3,18 +3,24 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""Extract and render the injected context of a Claude Code session transcript.
+"""Render the injected context of an agent session transcript.
 
-Reads the session's JSONL transcript and prints, in full, every piece of
-user-/project-specific context the harness injected: memory and instruction
-files, hook output, skill/agent/tool/MCP listings, attached files, and
-reminders.
+The principle is harness-agnostic: the session transcript is ground truth and
+introspection is not, so read the transcript and report what it actually
+contains. The *mechanism* is not — every harness stores its session differently.
+This script implements the **Claude Code** backend: it reads the JSONL
+transcript under ``~/.claude/projects/`` and renders every ``attachment`` record
+the harness injected (memory/instruction files, hook output, skill/agent/tool/
+MCP listings, attached files, reminders).
 
-The transcript does NOT contain the system prompt, so neither does this
-output. Everything else that entered the context window is here verbatim.
+In a non-Claude-Code harness it does not try to guess a foreign format. It
+detects the harness and prints a pointer to that harness's native
+session-introspection mechanism instead, so an agent following this skill is
+never left to introspect. The transcript does NOT contain the system prompt,
+so neither does this output.
 
 Usage:
-  show_context.py                          # current session, injected context
+  show_context.py                          # current Claude Code session
   show_context.py --include messages       # + prompts, replies, tool results
   show_context.py --only nested_memory,hook
   show_context.py --session <uuid>
@@ -29,7 +35,46 @@ import os
 import sys
 from pathlib import Path
 
+# Claude Code backend only. Other harnesses have their own stores (e.g. OpenCode
+# uses a SQLite DB) and are handled via HARNESS_POINTERS, not parsed here.
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
+
+# Printed when this script cannot read the session itself. Each entry must name
+# the native mechanism an agent should use in that harness (read ground truth,
+# never introspect) so an agent following this skill is never left to guess.
+HARNESS_POINTERS = {
+    "opencode": (
+        "You are running inside OpenCode, which stores sessions in a SQLite "
+        "database (~/.local/share/opencode/opencode.db), not a JSONL "
+        "transcript. Use OpenCode's native session tools to read the ground "
+        "truth instead of introspecting:\n"
+        "  - session_list            list sessions (newest first)\n"
+        "  - session_info <ses_id>   metadata + message count for a session\n"
+        "  - session_read <ses_id>   the messages/history, with roles + times\n"
+        "  - session_search \"<q>\"   full-text search across session messages\n"
+        "Report what those return, verbatim, the same way this script would. "
+        "Do not summarize away the dump, and do not answer from introspection."
+    ),
+    "unknown": (
+        "No Claude Code session was found, and the current harness is not one "
+        "this script reads directly. Apply the same principle with your "
+        "harness's native session-transcript mechanism: find the ground-truth "
+        "record of what was injected into this session (instruction files, "
+        "hooks, skill/MCP listings, attached files) and report it verbatim. "
+        "Do not answer from introspection. If your harness has no transcript, "
+        "say so plainly rather than guessing."
+    ),
+}
+
+
+def detect_harness():
+    """Detect by env var, not by directory existence — one machine may have
+    several harnesses installed, so a present store is not the current one."""
+    if os.environ.get("CLAUDE_CODE_SESSION_ID") or os.environ.get("CLAUDECODE"):
+        return "claude_code"
+    if os.environ.get("OPENCODE"):
+        return "opencode"
+    return "unknown"
 
 # Attachment types grouped into the sections used for rendering. Order here is
 # the order sections appear in the output: the things people most often need to
@@ -68,8 +113,10 @@ def die(msg):
 def find_transcript(session_id=None, explicit=None):
     """Locate the transcript file.
 
-    Searching by filename under ~/.claude/projects avoids having to replicate
-    the harness's cwd->slug encoding, which is lossy and version-dependent.
+    An explicit ``--transcript`` path works in any harness (the caller named a
+    Claude Code JSONL to inspect). Otherwise this is the Claude Code backend,
+    so a non-Claude-Code harness gets a pointer to its native session tools
+    instead of a misleading "session not found" error.
     """
     if explicit:
         p = Path(explicit).expanduser()
@@ -77,11 +124,16 @@ def find_transcript(session_id=None, explicit=None):
             die(f"no such transcript: {p}")
         return p
 
+    harness = detect_harness()
+    if harness != "claude_code":
+        print(HARNESS_POINTERS.get(harness, HARNESS_POINTERS["unknown"]))
+        sys.exit(0)
+
     sid = session_id or os.environ.get("CLAUDE_CODE_SESSION_ID")
     if not sid:
         die(
-            "no session id. Set --session, --transcript, or run inside a "
-            "Claude Code session (CLAUDE_CODE_SESSION_ID)."
+            "no Claude Code session id. Set --session or --transcript, or run "
+            "inside a Claude Code session (CLAUDE_CODE_SESSION_ID)."
         )
 
     matches = list(PROJECTS_DIR.glob(f"**/{sid}.jsonl"))
@@ -91,6 +143,10 @@ def find_transcript(session_id=None, explicit=None):
 
 
 def list_sessions():
+    harness = detect_harness()
+    if harness != "claude_code":
+        print(HARNESS_POINTERS.get(harness, HARNESS_POINTERS["unknown"]))
+        return
     rows = []
     for p in PROJECTS_DIR.glob("*/*.jsonl"):
         st = p.stat()
@@ -300,7 +356,11 @@ def collect(records, include_sidechains):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Render the injected context of a Claude Code session.",
+        description=(
+            "Render the injected context of an agent session transcript. "
+            "Reads Claude Code JSONL transcripts; in other harnesses prints a "
+            "pointer to that harness's native session tools."
+        ),
         epilog=(
             "examples:\n"
             "  show_context.py\n"

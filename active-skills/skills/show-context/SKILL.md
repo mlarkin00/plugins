@@ -1,6 +1,6 @@
 ---
 name: show-context
-description: "Use this skill whenever the user wants to see or verify what is actually in the session's context window — the user-/project-specific parts. Triggers on /show-context, \"what's in your context\", \"show me your context\", \"dump the context\", \"what context do you have loaded\", \"are my memories being injected\", \"did CLAUDE.md load\", \"is AGENTS.md in context\", \"what did the SessionStart hook add\", \"which skills are loaded\", \"what did that hook inject\", \"confirm X is in context\", or any question about whether a memory, instruction file, hook output, skill listing, or MCP block actually reached the model. Make sure to use this skill even when the user asks casually or about only one piece of context (\"did my memory load?\") — the answer must come from the session transcript, never from introspection or guesswork."
+description: "Use this skill whenever the user wants to see or verify what is actually in the session's context window — the user-/project-specific parts. Triggers on /show-context, \"what's in your context\", \"show me your context\", \"dump the context\", \"what context do you have loaded\", \"are my memories being injected\", \"did my instruction file load (CLAUDE.md, AGENTS.md, GEMINI.md)\", \"is AGENTS.md in context\", \"what did the startup hooks add\", \"which skills are loaded\", \"what did that hook inject\", \"confirm X is in context\", or any question about whether a memory, instruction file, hook output, skill listing, or MCP block actually reached the model. Make sure to use this skill even when the user asks casually or about only one piece of context (\"did my memory load?\") — the answer must come from the session transcript, never from introspection or guesswork."
 metadata:
   category: product-verification
 ---
@@ -23,30 +23,52 @@ Read it and report it.
 
 ## The one thing that trips everyone up
 
-Injected context appears in the prompt wrapped in `<system-reminder>` tags —
-but **that wrapping is applied at send time and is never stored.** Grepping a
-transcript for `system-reminder` returns zero hits even in a session with
-dozens of injections.
+Harnesses store the *typed* injection records, not the rendered prompt. The
+rendered form — tags, wrapping, merged text — is applied at send time and never
+persisted. So: reconstruct from the typed records. Never grep for the rendered
+form.
 
-What the transcript stores instead is `attachment` records with a typed
-payload:
+In the **Claude Code** backend this looks like: injected context appears in the
+prompt wrapped in `<system-reminder>` tags, but grepping a transcript for
+`system-reminder` returns zero hits even in a session with dozens of
+injections. What the transcript stores instead is `attachment` records with a
+typed payload:
 
 ```json
 {"type":"attachment","attachment":{"type":"nested_memory","path":"/repo/AGENTS.md",
  "content":{"type":"Project","content":"# Agent Instructions...","contentDiffersFromDisk":false}}}
 ```
 
-So: reconstruct from the typed records. Never grep for the rendered form.
+Other harnesses store the same idea differently (e.g. OpenCode keeps a context
+epoch + message parts in a SQLite DB). The shape differs; the rule does not —
+read the typed records the harness kept, not the rendered prompt you remember.
 
-## Running it
+## How to read the transcript
+
+The mechanism depends on the harness — there is no universal transcript
+format. Use whichever ground-truth reader the current harness provides, and
+apply the same principle with each: read what it actually stored, then report
+it verbatim.
+
+| Harness | How to read the session's injected context |
+|---|---|
+| **Claude Code** | `python3 <skill-dir>/scripts/show_context.py` — the bundled script. It finds the transcript via `$CLAUDE_CODE_SESSION_ID` under `~/.claude/projects/`. |
+| **OpenCode** | The native session tools: `session_list`, `session_info <ses_id>`, `session_read <ses_id>`, `session_search "<q>"`. Sessions live in a SQLite DB, not a JSONL the script can parse. |
+| **Other / unknown** | Whatever session-transcript mechanism the harness exposes. If it has none, say so plainly rather than introspecting. |
+
+Running the bundled script in a non-Claude-Code harness does not error — it
+detects the harness and prints the pointer above, so you are never left to
+guess. An explicit `--transcript <path>` overrides detection and reads that
+Claude Code JSONL from anywhere.
+
+### Claude Code backend
 
 ```bash
 python3 <skill-dir>/scripts/show_context.py
 ```
 
 That is the default and the common case: every injected item, rendered in
-full, for the current session. The script finds the transcript itself via
-`$CLAUDE_CODE_SESSION_ID`.
+full, for the current session.
 
 Show the output to the user as the answer. Do not summarize it away — the
 user asked to see the context, so the rendered dump is the deliverable.
@@ -100,9 +122,13 @@ already contains and a reader may skim past:
 
 ## Section keys
 
+These are the **Claude Code backend's** section keys (what the bundled script
+renders). Other harnesses expose the same kinds of injection under different
+names; map by meaning, not by key.
+
 | Key | Covers |
 |---|---|
-| `nested_memory` | CLAUDE.md, AGENTS.md, memory files, with scope and staleness |
+| `nested_memory` | Instruction files (CLAUDE.md, AGENTS.md, GEMINI.md), memory files, with scope and staleness |
 | `hook` | Hook output: success, non-blocking error, blocking error, system message |
 | `skills` | Skill listing and invoked skills |
 | `agents` | Agent listing deltas |
@@ -114,10 +140,16 @@ already contains and a reader may skim past:
 | `queued` | Queued commands |
 | `meta` | Slash-command and skill bodies injected as prompt content |
 
-Full record schemas are in `references/transcript-format.md` — read it when
-adding a renderer or when an unrecognized attachment type shows up.
+Full record schemas for the Claude Code backend are in
+`references/transcript-format.md` — read it when adding a renderer or when an
+unrecognized attachment type shows up.
 
 ## Gotchas & Anti-Patterns
+
+The principle-level rows apply in every harness. Rows naming `<system-reminder>`,
+`.jsonl`, `$CLAUDE_CODE_SESSION_ID`, `*_delta`, or sidechains are **Claude Code
+backend** specifics — the same mistake takes a different shape in another
+harness, so apply the principle rather than the literal check.
 
 | Excuse | Reality |
 |---|---|
@@ -130,3 +162,4 @@ adding a renderer or when an unrecognized attachment type shows up.
 | "Section is empty, so the skill is broken / memory is misconfigured" | Empty means nothing of that type was injected. That is the finding. Diagnosing the cause is a separate request. |
 | "This dump is long, I'll summarize the interesting parts" | The user asked to see the context. Summarizing returns them to trusting your judgment about what mattered — exactly what they were trying to get away from. Print it; use `--only` or `--inventory` if they ask to narrow. |
 | "Sidechain records are context too" | They are a subagent's context, not this session's. They are excluded by default for that reason. |
+| "I'm not in Claude Code, so this skill doesn't apply" | The principle does — read your harness's ground-truth transcript/epoch. Only the bundled script is Claude-Code-specific; it points you at the native mechanism when run elsewhere. |

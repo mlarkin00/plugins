@@ -1,5 +1,12 @@
 # Claude Code transcript format
 
+This documents the **Claude Code backend** of the harness-agnostic `show-context`
+skill — the JSONL format the bundled `scripts/show_context.py` reads. Other
+harnesses store the same kinds of injection under different shapes (e.g.
+OpenCode keeps a context epoch and message parts in a SQLite DB); the skill's
+principle applies to each, but the record schemas below are Claude Code's
+alone.
+
 Empirically derived from transcripts written by Claude Code 2.1.x. Field sets
 vary across versions — treat every field as optional and degrade gracefully
 rather than asserting a shape.
