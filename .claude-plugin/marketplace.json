@@ -6,12 +6,6 @@
   },
   "plugins": [
     {
-      "name": "agent-memory",
-      "source": "./agent-memory",
-      "description": "GitHub-backed persistent memory for Claude Code. Syncs agent memory across machines via a private Git repository.",
-      "version": "0.3.9"
-    },
-    {
       "name": "memory-bank",
       "source": "./memory-bank",
       "description": "GCP-backed long-term memory for Claude Code. Fetches global and project-scoped facts from Vertex AI Reasoning Engine Memory Bank at session start; consolidates new facts at session end.",
