@@ -87,6 +87,7 @@ memory-bank/
 │   ├── bootstrap.py             provisions the engine + writes ID back (idempotent)
 │   ├── create_engine.py         one-time engine provisioning
 │   ├── import_cc_memories.py    import ~/.claude/memory/*.md into GCP
+│   ├── upload_session.py        opencode: upload full transcript to Agent Engine Session Service
 │   └── install-symlinks.sh      links the scripts into ~/.claude/scripts/memory-bank/
 └── skills/
     ├── memory-bank/             /memory-bank — save a high-priority fact immediately

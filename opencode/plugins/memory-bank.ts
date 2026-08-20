@@ -27,6 +27,7 @@ const SAVE_INTERVAL = 5 * 60 * 1000; // 5 minutes per session
 let cachedMemories: string | null = null;
 let cacheTime = 0;
 const lastSave: Map<string, number> = new Map();
+const lastUploadedCount: Map<string, number> = new Map();
 
 async function loadMemories($): Promise<string | null> {
   const now = Date.now();
@@ -95,6 +96,75 @@ async function saveContext(client, sessionID: string, $): Promise<void> {
   }
 }
 
+async function uploadSession(client, sessionID: string, $): Promise<void> {
+  try {
+    const result = await client.session.messages({ path: { id: sessionID } });
+    const messages = result.data;
+    if (!messages || !Array.isArray(messages) || messages.length === 0) return;
+
+    const lastCount = lastUploadedCount.get(sessionID) ?? 0;
+    if (messages.length <= lastCount) return; // no growth since last upload
+
+    // Only upload the new turns (delta since last upload). appendEvent is
+    // append-only, so re-uploading a delta never duplicates earlier turns.
+    const newMessages = messages.slice(lastCount);
+
+    // Flatten new messages to JSONL with role, content, timestamp, messageId.
+    // Reuses the same text-extraction logic as saveContext.
+    const lines: string[] = [];
+    for (const msg of newMessages) {
+      const role = msg.info?.role;
+      if (role !== "user" && role !== "assistant") continue;
+      const textParts = (msg.parts ?? []).filter((p) => p.type === "text");
+      const text = textParts.map((p) => p.text).join("\n");
+      if (text) {
+        lines.push(JSON.stringify({
+          role,
+          content: text,
+          timestamp: msg.info?.time_created,
+          messageId: msg.info?.id,
+        }));
+      }
+    }
+
+    if (lines.length === 0) {
+      // All new messages were non-text — advance the count so we don't
+      // re-process them on every idle.
+      lastUploadedCount.set(sessionID, messages.length);
+      return;
+    }
+
+    // Write the delta to a temp JSONL file that upload_session.py can read
+    const tmpFile = path.join(os.tmpdir(), `opencode-session-${sessionID}.jsonl`);
+    await fs.promises.writeFile(tmpFile, lines.join("\n"));
+
+    const script = path.join(PLUGINS_REPO, "memory-bank", "scripts", "upload_session.py");
+    const payload = JSON.stringify({
+      sessionId: sessionID,
+      transcriptPath: tmpFile,
+      workspace: process.cwd(),
+    });
+
+    try {
+      const shellResult = await $`echo ${payload} | python3 ${script}`.quiet().nothrow();
+      const stdout = shellResult.stdout.toString().trim();
+      // Only advance the growth gate if the script ran to completion (it
+      // prints a JSON summary on stdout). No output means it failed early
+      // (no auth, no config, can't read file) — don't advance, so the next
+      // idle re-attempts the same delta. appendEvent is append-only, so a
+      // partial run that did append some events will produce duplicates on
+      // retry — the memory-minion curator handles those.
+      if (stdout) {
+        lastUploadedCount.set(sessionID, messages.length);
+      }
+    } finally {
+      await fs.promises.unlink(tmpFile).catch(() => {});
+    }
+  } catch {
+    // Fail-open: an upload error must never break the session
+  }
+}
+
 export default async function ({ client, $ }) {
   return {
     // Inject long-term memories into the system prompt before each LLM call
@@ -111,6 +181,7 @@ export default async function ({ client, $ }) {
       const sessionID = input.event?.properties?.sessionID;
       if (!sessionID) return;
       await saveContext(client, sessionID, $);
+      await uploadSession(client, sessionID, $);
     },
   };
 }
