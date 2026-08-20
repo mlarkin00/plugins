@@ -30,7 +30,7 @@ jobs:
           MARKETPLACE=".claude-plugin/marketplace.json"
           # active-skills is deliberately absent: sync-active-skills.yml owns its
           # versioning and releases.
-          PLUGINS="agent-memory llm-wiki memory-bank skill-usage"
+          PLUGINS="llm-wiki memory-bank skill-usage"
 
           # Files changed in this push (handles first-push / force-push gracefully).
           BEFORE="${{ github.event.before }}"

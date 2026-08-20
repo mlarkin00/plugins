@@ -2,15 +2,15 @@
 
 ## Project Goal
 
-Single install point for one plugin set across **two runtimes** — Claude Code (via the `mlarkin00-plugins` marketplace) and Antigravity (`agy`, via a clone bulk-installed with `agy plugin install <clone>`). Owns their versioning, tagging, and GitHub releases. A change that works on only one runtime is not done.
+Single install point for one plugin set across **three runtimes** — Claude Code (via the `mlarkin00-plugins` marketplace), Antigravity (`agy`, via a clone bulk-installed with `agy plugin install <clone>`), and opencode (via `opencode/install.py`, which symlinks TS plugins into `~/.config/opencode/plugins/` and wires `skills.paths` + `claude_code.plugins_override`). Owns their versioning, tagging, and GitHub releases. A change that works on only one runtime is not done.
 
 ## Project Context
 
-Each top-level directory is one plugin serving both runtimes from one copy: `.claude-plugin/plugin.json` (Claude) and `plugin.json` (Antigravity) carrying the same version, plus some of `skills/`, `agents/`, `commands/`, `hooks/hooks.json` (Claude), `hooks.json` (Antigravity), `scripts/`. `.claude-plugin/marketplace.json` lists them. No build step; `active-skills`, `llm-wiki`, `memory-bank` and `skill-usage` carry `tests/`, run under stdlib `unittest` (no pytest).
+Each top-level directory is one plugin serving both Claude Code and Antigravity from one copy: `.claude-plugin/plugin.json` (Claude) and `plugin.json` (Antigravity) carrying the same version, plus some of `skills/`, `agents/`, `commands/`, `hooks/hooks.json` (Claude), `hooks.json` (Antigravity), `scripts/`. `.claude-plugin/marketplace.json` lists them. The `opencode/` directory at the repo root holds opencode-native TS plugin files and `install.py` — opencode ignores the manifests, and the other two runtimes ignore `opencode/`. No build step; `active-skills`, `llm-wiki`, `memory-bank` and `skill-usage` carry `tests/`, run under stdlib `unittest` (no pytest).
 
 | Plugin | Versioned by |
 |---|---|
-| `agent-memory`, `llm-wiki`, `memory-bank`, `skill-usage` | `release.yml` (auto) |
+| `llm-wiki`, `memory-bank`, `skill-usage` | `release.yml` (auto) |
 | `active-skills` | `sync-active-skills.yml` (auto) |
 
 Per-plugin briefings: `llm-wiki/AGENTS.md`, `memory-bank/AGENTS.md`. Backlog: `.agents/TODO.md`. **Runtime evidence — how each rule below was established, and against which version — is the OKF bundle catalogued at the bottom of this file** (authoring and maintenance: `.agents/wiki/CLAUDE.md`). Open the specific concept before changing a guard. **`CLAUDE.md` is a hand-propagated twin of this file** — Claude Code never reads `AGENTS.md` and `agy` never expands `@` imports, so each runtime gets its own file and its own discovery mode (catalog inlined here, imported there). Any convention edit here MUST be made there too.
@@ -48,6 +48,11 @@ claude plugin marketplace update mlarkin00-plugins && claude plugin update <plug
 # Antigravity: the ONLY reliable check is a bulk install into a throwaway HOME.
 # `agy plugin validate <path>` hard-fails on any plugin lacking a root plugin.json.
 HOME=$(mktemp -d) agy plugin install "$PWD"
+
+# opencode: install/symlink the TS plugins into ~/.config/opencode/plugins/,
+# wire skills.paths and claude_code.plugins_override. Idempotent. --uninstall reverses.
+python3 opencode/install.py
+python3 opencode/install.py --uninstall
 
 # Jetski & Antigravity ONLY: install/uninstall the hourly git polling systemd timer.
 # Do NOT use with Claude Code or clients that have proper marketplace/plugin install/update.
